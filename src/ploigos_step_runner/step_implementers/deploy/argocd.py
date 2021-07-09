@@ -22,6 +22,12 @@ Configuration Key         | Required? | Default  | Description
 `argocd-skip-tls`         | Yes       | False    | `False` to not ignore TLS issues when \
                                                    authenticating with ArgoCD. True` to ignore TLS \
                                                    issues when authenticating with ArgoCD.
+`argocd-grpc-web`         | No        | False    | `True` to pass the `grpc-web` flag when \
+                                                   performing ArgoCD operations. \
+                                                   As per ArgoCD documatnion: \
+                                                   Enables gRPC-web protocol. Useful if Argo CD \
+                                                   server is behind proxy which does not \
+                                                   support HTTP2.
 `argocd-sync-timeout-seconds` \
                           | Yes       | 60       | Number of seconds to wait for argocd to \
                                                    sync updates
@@ -116,6 +122,7 @@ DEFAULT_CONFIG = {
     'argocd-sync-timeout-seconds': 60,
     'argocd-auto-sync': True,
     'argocd-skip-tls' : False,
+    'argocd-grpc-web' : False,
     'deployment-config-helm-chart-path': './',
     'deployment-config-helm-chart-additional-values-files': [],
     'deployment-config-helm-chart-values-file-image-tag-yq-path': 'image_tag',
@@ -248,6 +255,7 @@ class ArgoCD(StepImplementer):
             self.get_value('deployment-config-helm-chart-additional-values-files')
         container_image_tag = self.get_value('container-image-tag')
         force_push_tags = self.get_value('force-push-tags')
+        grpc_web = self.get_value('argocd-grpc-web')
 
         try:
             argocd_app_name = self.__get_app_name()
@@ -307,13 +315,15 @@ class ArgoCD(StepImplementer):
                 argocd_api=self.get_value('argocd-api'),
                 username=self.get_value('argocd-username'),
                 password=self.get_value('argocd-password'),
-                insecure=self.get_value('argocd-skip-tls')
+                insecure=self.get_value('argocd-skip-tls'),
+                grpc_web=grpc_web
             )
             print("Add target cluster to ArgoCD")
             self.__argocd_add_target_cluster(
                 kube_api=deployment_config_destination_cluster_uri,
                 kube_api_token=deployment_config_destination_cluster_token,
-                kube_api_skip_tls=self.get_value('kube-api-skip-tls')
+                kube_api_skip_tls=self.get_value('kube-api-skip-tls'),
+                grpc_web=grpc_web
             )
             print(f"Create or update ArgoCD Application ({argocd_app_name})")
             argocd_values_files = []
@@ -326,20 +336,23 @@ class ArgoCD(StepImplementer):
                 path=deployment_config_helm_chart_path,
                 dest_server=deployment_config_destination_cluster_uri,
                 auto_sync=self.get_value('argocd-auto-sync'),
-                values_files=argocd_values_files
+                values_files=argocd_values_files,
+                grpc_web=grpc_web
             )
 
             # sync and wait for the sync of the ArgoCD app
             print(f"Sync (and wait for) ArgoCD Application ({argocd_app_name})")
             ArgoCD.__argocd_app_sync(
                 argocd_app_name=argocd_app_name,
-                argocd_sync_timeout_seconds=self.get_value('argocd-sync-timeout-seconds')
+                argocd_sync_timeout_seconds=self.get_value('argocd-sync-timeout-seconds'),
+                grpc_web=grpc_web
             )
 
             # get the ArgoCD app manifest that was synced
             print(f"Get ArgoCD Application ({argocd_app_name}) synced manifest")
             arogcd_app_manifest_file = self.__argocd_get_app_manifest(
-                argocd_app_name=argocd_app_name
+                argocd_app_name=argocd_app_name,
+                grpc_web=grpc_web
             )
             step_result.add_artifact(
                 name='argocd-deployed-manifest',
@@ -828,7 +841,8 @@ class ArgoCD(StepImplementer):
         argocd_api,
         username,
         password,
-        insecure=False
+        insecure=False,
+        grpc_web=False
     ):
         """Signs into ArgoCD CLI.
 
@@ -842,11 +856,15 @@ class ArgoCD(StepImplementer):
             if insecure:
                 insecure_flag = '--insecure'
 
+            if grpc_web:
+                grpc_web_flag = '--grpc-web'
+
             sh.argocd.login(  # pylint: disable=no-member
                 argocd_api,
                 f'--username={username}',
                 f'--password={password}',
                 insecure_flag,
+                grpc_web_flag,
                 _out=sys.stdout,
                 _err=sys.stderr
             )
@@ -857,7 +875,8 @@ class ArgoCD(StepImplementer):
         self,
         kube_api,
         kube_api_token=None,
-        kube_api_skip_tls=False
+        kube_api_skip_tls=False,
+        grpc_web=False
     ):
         """If the target cluster is not the default cluster then add that cluster to ArgoCD.
 
@@ -899,9 +918,13 @@ users:
                 contents=bytes(kubeconfig, 'utf-8')
             )
             try:
+                if grpc_web:
+                    grpc_web_flag = '--grpc-web'
+
                 sh.argocd.cluster.add(  # pylint: disable=no-member
                     '--kubeconfig', config_argocd_cluster_context_file,
                     context_name,
+                    grpc_web_flag,
                     _out=sys.stdout,
                     _err=sys.stderr
                 )
@@ -918,7 +941,8 @@ users:
         path,
         dest_server,
         auto_sync,
-        values_files
+        values_files,
+        grpc_web=False
     ):
         """Creates or updates an ArtoCD App.
 
@@ -939,6 +963,9 @@ users:
                 for value_file in values_files:
                     values_params += [f'--values={value_file}']
 
+            if grpc_web:
+                grpc_web_flag = '--grpc-web'
+
             sh.argocd.app.create(  # pylint: disable=no-member
                 argocd_app_name,
                 f'--repo={repo}',
@@ -949,6 +976,7 @@ users:
                 f'--sync-policy={sync_policy}',
                 values_params,
                 '--upsert',
+                grpc_web_flag,
                 _out=sys.stdout,
                 _err=sys.stderr
             )
@@ -960,13 +988,18 @@ users:
     @staticmethod
     def __argocd_app_sync(
         argocd_app_name,
-        argocd_sync_timeout_seconds
+        argocd_sync_timeout_seconds,
+        grpc_web=False
     ):
+        if grpc_web:
+            grpc_web_flag = '--grpc-web'
+
         try:
             sh.argocd.app.sync(  # pylint: disable=no-member
                 '--prune',
                 '--timeout', argocd_sync_timeout_seconds,
                 argocd_app_name,
+                grpc_web_flag,
                 _out=sys.stdout,
                 _err=sys.stderr
             )
@@ -980,6 +1013,7 @@ users:
                 '--timeout', argocd_sync_timeout_seconds,
                 '--health',
                 argocd_app_name,
+                grpc_web_flag,
                 _out=sys.stdout,
                 _err=sys.stderr
             )
@@ -991,7 +1025,8 @@ users:
     def __argocd_get_app_manifest(
         self,
         argocd_app_name,
-        source='live'
+        source='live',
+        grpc_web=False
     ):
         """Get ArgoCD Application manifest.
 
@@ -1014,9 +1049,13 @@ users:
         """
         arogcd_app_manifest_file = self.write_working_file('deploy_argocd_manifests.yml')
         try:
+            if grpc_web:
+                grpc_web_flag = '--grpc-web'
+
             sh.argocd.app.manifests(  # pylint: disable=no-member
                 f'--source={source}',
                 argocd_app_name,
+                grpc_web_flag,
                 _out=arogcd_app_manifest_file,
                 _err=sys.stderr
             )
