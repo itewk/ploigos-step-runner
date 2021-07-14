@@ -47,7 +47,7 @@ class TestImportPGPKey(BaseTestCase):
             '--import-options=import-show',
             _in=pgp_private_key,
             _out=Any(IOBase),
-            _err_to_out=True,
+            _err=Any(IOBase),
             _tee='out'
         )
 
@@ -80,7 +80,7 @@ class TestImportPGPKey(BaseTestCase):
             '--import-options=import-show',
             _in=pgp_private_key,
             _out=Any(IOBase),
-            _err_to_out=True,
+            _err=Any(IOBase),
             _tee='out'
         )
 
@@ -107,7 +107,7 @@ class TestImportPGPKey(BaseTestCase):
             '--import-options=import-show',
             _in=pgp_private_key,
             _out=Any(IOBase),
-            _err_to_out=True,
+            _err=Any(IOBase),
             _tee='out'
         )
 
@@ -222,7 +222,7 @@ B8pBNt1QOA==
             '--export',
             pgp_private_key_fingerprint,
             _out=Any(IOBase),
-            _err_to_out=False,
+            _err=Any(IOBase),
             _tee='out'
         )
         
@@ -252,6 +252,6 @@ B8pBNt1QOA==
             '--export',
             pgp_private_key_fingerprint,
             _out=Any(IOBase),
-            _err_to_out=False,
+            _err=Any(IOBase),
             _tee='out'
         )

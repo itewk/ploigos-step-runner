@@ -76,13 +76,20 @@ def import_pgp_key(pgp_private_key):
     try:
         # import the key
 
-        # NOTE: GPG is weird in that it sends "none error" output to stderr even on success...
-        #       so merge the stderr into stdout
         gpg_import_stdout_result = StringIO()
         gpg_import_stdout_callback = create_sh_redirect_to_multiple_streams_fn_callback([
             sys.stdout,
             gpg_import_stdout_result
         ])
+
+        # NOTE: GPG is weird in that it sends "none error" output to stderr even on success,
+        #       so capture stderr separately
+        gpg_import_stderr_result = StringIO()
+        gpg_import_stderr_callback = create_sh_redirect_to_multiple_streams_fn_callback([
+            sys.stderr,
+            gpg_import_stderr_result
+        ])
+
         sh.gpg( # pylint: disable=no-member
             '--import',
             '--fingerprint',
@@ -90,9 +97,11 @@ def import_pgp_key(pgp_private_key):
             '--import-options=import-show',
             _in=pgp_private_key,
             _out=gpg_import_stdout_callback,
-            _err_to_out=True,
+            _err=gpg_import_stderr_callback,
             _tee='out'
         )
+
+        print(f"Errors/warning raised: '{gpg_import_stderr_result.getvalue()}'")
 
         # get the fingerprint of the imported key
         #
@@ -139,15 +148,18 @@ def export_pgp_public_key(pgp_private_key_fingerprint):
     """
     try:
         gpg_export_stdout_result = StringIO()
+        gpg_export_stderr_result = StringIO()
 
         sh.gpg( # pylint: disable=no-member
             '--armor',
             '--export',
             pgp_private_key_fingerprint,
             _out=gpg_export_stdout_result,
-            _err_to_out=False,
+            _err=gpg_export_stderr_result,
             _tee='out'
         )
+
+        print(f"Errors/warning raised: '{gpg_export_stderr_result.getvalue()}'")
 
         gpg_public_key = gpg_export_stdout_result.getvalue()
     except sh.ErrorReturnCode as error:
