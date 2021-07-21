@@ -64,7 +64,7 @@ automatically be applied</td>
 <tr>
 <td><code>containers-config-auth-file</code></td>
 <td>Yes</td>
-<td><code>'~/.skopeo-auth.json'</code></td>
+<td><code>'~/.container-image-repo-auth.json'</code></td>
 <td>Path to the container registry authentication file
 to use for container registry authentication.</td>
 </tr>
@@ -149,7 +149,7 @@ Configuration Key | Required? | Default  | Description
                                            automatically be applied
 `src-tls-verify`  | Yes       | `&#39;true&#39;` | Whether to very TLS for source of image
 `dest-tls-verify` | Yes       | `&#39;true&#39;` | Whether to verify TLS for destination of image
-`containers-config-auth-file` | Yes | `&#39;~/.skopeo-auth.json&#39;` | \
+`containers-config-auth-file` | Yes | `&#39;~/.container-image-repo-auth.json&#39;` | \
                                            Path to the container registry authentication file \
                                            to use for container registry authentication.
 `container-image-version`     | Yes |    | Tag to push container image with
@@ -189,7 +189,7 @@ from ploigos_step_runner.utils.containers import container_registries_login
 DEFAULT_CONFIG = {
     &#39;src-tls-verify&#39;: &#39;true&#39;,
     &#39;dest-tls-verify&#39;: &#39;true&#39;,
-    &#39;containers-config-auth-file&#39;: os.path.join(Path.home(), &#39;.skopeo-auth.json&#39;)
+    &#39;containers-config-auth-file&#39;: os.path.join(Path.home(), &#39;.container-image-repo-auth.json&#39;)
 }
 
 REQUIRED_CONFIG_OR_PREVIOUS_STEP_RESULT_ARTIFACT_KEYS = [
@@ -315,7 +315,7 @@ class Skopeo(StepImplementer):
 <dl>
 <dt id="ploigos_step_runner.step_implementers.push_container_image.skopeo.Skopeo"><code class="flex name class">
 <span>class <span class="ident">Skopeo</span></span>
-<span>(</span><span>results_dir_path, results_file_name, work_dir_path, config, environment=None)</span>
+<span>(</span><span>workflow_result, parent_work_dir_path, config, environment=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p><code>StepImplementer</code> for the <code>push-container-image</code> step using Skopeo.</p></div>
@@ -476,8 +476,6 @@ def step_implementer_config_defaults():
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults">global_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults">global_environment_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.has_config_value" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.has_config_value">has_config_value</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_dir_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.results_dir_path">results_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_file_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.results_file_path">results_file_path</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.run_step" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.run_step">run_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.step_config">step_config</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides">step_config_overrides</a></code></li>
@@ -486,7 +484,6 @@ def step_implementer_config_defaults():
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name">sub_step_implementer_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_name" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.sub_step_name">sub_step_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path">work_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step">work_dir_path_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.workflow_result" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.workflow_result">workflow_result</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.write_working_file" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.write_working_file">write_working_file</a></code></li>
 </ul>

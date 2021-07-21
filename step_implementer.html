@@ -29,6 +29,7 @@
 </summary>
 <pre><code class="python">&#34;&#34;&#34;Abstract class and helper constants for StepImplementer.
 &#34;&#34;&#34;
+import json
 import os
 import pprint
 import sys
@@ -38,9 +39,9 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from ploigos_step_runner.config.config_value import ConfigValue
-from ploigos_step_runner.step_result import StepResult
+from ploigos_step_runner import StepResult
 from ploigos_step_runner.utils.io import TextIOIndenter
-from ploigos_step_runner.workflow_result import WorkflowResult
+
 
 class DefaultSteps:  # pylint: disable=too-few-public-methods
     &#34;&#34;&#34;Convenience constants for the default steps used in the default workflow definition.
@@ -71,11 +72,9 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
     Parameters
     ----------
-    results_dir_path : str
-        Path to the directory to write the results of the step to
-    results_file_name : str
-        Name of file to write the results of the step to
-    work_dir_path : str
+    workflow_result : WorkflowResult
+        The WorkflowResult to add StepResult to when running this StepImplementer.
+    parent_work_dir_path : str
         Path to the directory to write step working files to
     step_environment_config : dict, optional
         Step configuration specific to the current environment.
@@ -90,23 +89,21 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
     &#34;&#34;&#34;
 
     __TITLE_LENGTH = 80
+    __INDENT_SIZE   = 4
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        results_dir_path,
-        results_file_name,
-        work_dir_path,
+        workflow_result,
+        parent_work_dir_path,
         config,
         environment=None
     ):
-        self.__results_dir_path = results_dir_path
-        self.__results_file_name = results_file_name
-        self.__work_dir_path = work_dir_path
+        self.__parent_work_dir_path = parent_work_dir_path
 
         self.__config = config
         self.__environment = environment
 
-        self.__workflow_result = None
+        self.__workflow_result = workflow_result
 
         super().__init__()
 
@@ -187,60 +184,16 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         return defaults_for_env
 
     @property
-    def results_file_path(self):
-        &#34;&#34;&#34;
-        Get the OS path to the results file.
-        EG:  /tmp/tmpno_qi7np/step-runner-results/step-runner-results.yml
-
-        Returns
-        -------
-        str
-            OS path to the results file.
-        &#34;&#34;&#34;
-        return os.path.join(self.results_dir_path, self.__results_file_name)
-
-    @property
-    def results_dir_path(self):
-        &#34;&#34;&#34;
-        Get the OS path to the results folder.
-        If the results folder does not exist, create it.
-        EG:  /tmp/tmpno_qi7np/step-runner-results
-
-        Returns
-        -------
-        str
-            OS path to the results folder.
-        &#34;&#34;&#34;
-        os.makedirs(self.__results_dir_path, exist_ok=True)
-        return self.__results_dir_path
-
-    @property
     def work_dir_path(self):
-        &#34;&#34;&#34;
-        Get the OS path to the working folder.
-        EG:  /tmp/tmpno_qi7np/step-runner-working
-
-        Returns
-        -------
-        str
-            OS path to the working folder.
-        &#34;&#34;&#34;
-        os.makedirs(self.__work_dir_path, exist_ok=True)
-        return os.path.abspath(self.__work_dir_path)
-
-    @property
-    def work_dir_path_step(self):
-        &#34;&#34;&#34;
-        Get the OS path to the working folder for this step.
+        &#34;&#34;&#34;Get the OS path to the working folder for this step.
         If the folder does not exist, create it.
-        EG:  /tmp/tmpno_qi7np/step-runner-working/stepname
 
         Returns
         -------
         str
             OS path to the working folder plus step name.
         &#34;&#34;&#34;
-        work_dir_path_step = os.path.join(self.work_dir_path, self.step_name)
+        work_dir_path_step = os.path.join(self.__parent_work_dir_path, self.step_name)
         if self.environment:
             work_dir_path_step = os.path.join(work_dir_path_step, self.environment)
         os.makedirs(work_dir_path_step, exist_ok=True)
@@ -289,10 +242,6 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             Object containing a list of dictionary of step results
             from previous steps.
         &#34;&#34;&#34;
-        if not self.__workflow_result:
-            self.__workflow_result = WorkflowResult.load_from_pickle_file(
-                pickle_filename=self.__workflow_result_pickle_file_path
-            )
         return self.__workflow_result
 
     @staticmethod
@@ -363,9 +312,8 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        bool
-            True on step run success.
-            False on step run failure.
+        StepResult
+            Results of running this step.
         &#34;&#34;&#34;
 
         StepImplementer.__print_section_title(f&#34;Step Start - {self.step_name}&#34;)
@@ -436,17 +384,6 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             step_result.success = False
             step_result.message = str(invalid_error)
 
-        # save the step results
-        self.workflow_result.add_step_result(
-            step_result=step_result
-        )
-        self.workflow_result.write_to_pickle_file(
-            pickle_filename=self.__workflow_result_pickle_file_path
-        )
-        self.workflow_result.write_results_to_yml_file(
-            yml_filename=self.results_file_path
-        )
-
         # print the step run results
         StepImplementer.__print_section_title(
             f&#34;Results - {self.step_name}&#34;,
@@ -454,13 +391,17 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             indent=1
         )
 
-        StepImplementer.__print_data(&#39;Results File Path&#39;, self.results_file_path)
-
-        StepImplementer.__print_data(&#39;Results&#39;, step_result.get_step_result_dict())
+        StepImplementer.__print_data(&#39;Environment&#39;, step_result.environment)
+        StepImplementer.__print_data(&#39;Step&#39;, step_result.step_name)
+        StepImplementer.__print_data(&#39;Sub Step&#39;, step_result.sub_step_name)
+        StepImplementer.__print_data(&#39;Sub Step Implementer&#39;, step_result.sub_step_implementer_name)
+        StepImplementer.__print_data(&#39;Success&#39;, step_result.success)
+        StepImplementer.__print_data(&#39;Message&#39;, step_result.message)
+        StepImplementer.__print_data(&#39;Artifacts&#39;, step_result.artifacts_dicts)
 
         StepImplementer.__print_section_title(f&#39;Step End - {self.step_name}&#39;)
 
-        return step_result.success
+        return step_result
 
     def get_value(self, key):
         &#34;&#34;&#34;Get the value for a given key, either from given configuration or from the result
@@ -468,8 +409,10 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         Parameters
         ----------
-        key : str
+        key : str, array
             Key to get the configuration value or result value for.
+            If array will get configuration value or result value for first key in list with a
+            value.
 
         Returns
         -------
@@ -478,24 +421,34 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             key. Or None if not found.
         &#34;&#34;&#34;
 
-        # first try to get config value
-        config_value = self.get_config_value(key)
-        if config_value is not None:
-            return config_value
+        if isinstance(key, list):
+            keys = key
+        else:
+            keys = [key]
 
-        # if not found config value try to get result value specific to current environment
-        if self.environment:
+        for k in keys:
+            # first try to get config value
+            config_value = self.get_config_value(k)
+            if config_value is not None:
+                return config_value
+
+            # if not found config value try to get result value specific to current environment
+            if self.environment:
+                result_value = self.get_result_value(
+                    artifact_name=k,
+                    environment=self.environment
+                )
+                if result_value is not None:
+                    return result_value
+
+            # last try getting result value from no specific environment
             result_value = self.get_result_value(
-                artifact_name=key,
-                environment=self.environment
+                artifact_name=k
             )
-            if result_value is not None:
-                return result_value
 
-        # last try getting result value from no specific environment
-        result_value = self.get_result_value(
-            artifact_name=key
-        )
+            if result_value:
+                break
+
         return result_value
 
     def get_config_value(self, key):
@@ -622,39 +575,20 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             )
         )
 
-    @property
-    def __workflow_result_pickle_file_path(self):
-        &#34;&#34;&#34;
-        Get the OS path to the workflow result pickle file.
-        (The &#39;pickle&#39; file contains the serialized list of step results.)
-        The name of the pickle file is the basename of the results_file_name.
-        EG:
-        If the name of the results_file_name is step-runner-results.yml,
-        then the name of the pickle file is step-runner-results.pkl
-        /tmp/tmp9sau_2j5/step-runner-working/step-runner-results.pkl
+    def create_working_dir_sub_dir(self, sub_dir_relative_path=&#34;&#34;):
+        &#34;&#34;&#34;Create a folder under the working/stepname folder.
 
         Returns
         -------
         str
-           OS path to the workflow pickle (serialized) file.
+            Path to created working sub directory.
         &#34;&#34;&#34;
-        pickle_filename = os.path.splitext(self.__results_file_name)[0] + &#39;.pkl&#39;
-        return os.path.join(self.work_dir_path, pickle_filename)
-
-    def create_working_dir_sub_dir(self, sub_dir_relative_path):
-        &#34;&#34;&#34;
-        Create a folder under the working/stepname folder.
-        EG:  /tmp/tmpno_qi7np/step-runner-working/stepname/sub
-        &#34;&#34;&#34;
-        file_path = os.path.join(self.work_dir_path_step, sub_dir_relative_path)
+        file_path = os.path.join(self.work_dir_path, sub_dir_relative_path)
         os.makedirs(file_path, exist_ok=True)
         return file_path
 
     def write_working_file(self, filename, contents=None):
-        &#34;&#34;&#34;
-        Write content or touch filename in working directory
-        for this step.
-        EG:  /tmp/tmpno_qi7np/step-runner-working/stepname/filename
+        &#34;&#34;&#34;Write content or touch filename in working directory for this step.
 
         Parameters
         ----------
@@ -669,7 +603,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             Return a string to the file path
         &#34;&#34;&#34;
         # eg: step-runner-working/step_name
-        file_path = os.path.join(self.work_dir_path_step, filename)
+        file_path = os.path.join(self.work_dir_path, filename)
 
         # sub-directories might be passed filename, eg: foo/filename
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -712,7 +646,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         Notes
         -----
-        Indent levels are each are 4 spaces wide.
+        Indent levels are each are StepImplementer.__INDENT_SIZE spaces wide.
 
         Parameters
         ----------
@@ -723,13 +657,27 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         indent : int
             Amount to indent the title by and then the content by this +1
         &#34;&#34;&#34;
-        printer = pprint.PrettyPrinter()
+
         StepImplementer.__print_indented(
             text=title,
             indent=indent
         )
+
+        # NOTE: do a json.dumps so that when printing dicts and arrays the {} and [] get put on
+        #       their own lines which there is no way to do with PrettyPrinter.
+        if isinstance(data, (dict, list)):
+            formated_data = json.dumps(
+                data,
+                indent=StepImplementer.__INDENT_SIZE
+            )
+        elif isinstance(data, str):
+            formated_data = data
+        else:
+            printer = pprint.PrettyPrinter()
+            formated_data = printer.pformat(data)
+
         StepImplementer.__print_indented(
-            text=printer.pformat(data),
+            text=formated_data,
             indent=indent + 1
         )
         print()
@@ -740,7 +688,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         Notes
         -----
-        Indent levels are each are 4 spaces wide.
+        Indent levels are each are StepImplementer.__INDENT_SIZE spaces wide.
 
         Parameters
         ----------
@@ -751,7 +699,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         &#34;&#34;&#34;
         print(textwrap.indent(
             text=text,
-            prefix=&#34; &#34; * (4 * indent)
+            prefix=&#34; &#34; * (StepImplementer.__INDENT_SIZE * indent)
         ))</code></pre>
 </details>
 </section>
@@ -873,17 +821,15 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 </dd>
 <dt id="ploigos_step_runner.step_implementer.StepImplementer"><code class="flex name class">
 <span>class <span class="ident">StepImplementer</span></span>
-<span>(</span><span>results_dir_path, results_file_name, work_dir_path, config, environment=None)</span>
+<span>(</span><span>workflow_result, parent_work_dir_path, config, environment=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Abstract representation of a step implementer.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>results_dir_path</code></strong> :&ensp;<code>str</code></dt>
-<dd>Path to the directory to write the results of the step to</dd>
-<dt><strong><code>results_file_name</code></strong> :&ensp;<code>str</code></dt>
-<dd>Name of file to write the results of the step to</dd>
-<dt><strong><code>work_dir_path</code></strong> :&ensp;<code>str</code></dt>
+<dt><strong><code>workflow_result</code></strong> :&ensp;<code>WorkflowResult</code></dt>
+<dd>The WorkflowResult to add StepResult to when running this StepImplementer.</dd>
+<dt><strong><code>parent_work_dir_path</code></strong> :&ensp;<code>str</code></dt>
 <dd>Path to the directory to write step working files to</dd>
 <dt><strong><code>step_environment_config</code></strong> :&ensp;<code>dict</code>, optional</dt>
 <dd>Step configuration specific to the current environment.</dd>
@@ -908,11 +854,9 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
     Parameters
     ----------
-    results_dir_path : str
-        Path to the directory to write the results of the step to
-    results_file_name : str
-        Name of file to write the results of the step to
-    work_dir_path : str
+    workflow_result : WorkflowResult
+        The WorkflowResult to add StepResult to when running this StepImplementer.
+    parent_work_dir_path : str
         Path to the directory to write step working files to
     step_environment_config : dict, optional
         Step configuration specific to the current environment.
@@ -927,23 +871,21 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
     &#34;&#34;&#34;
 
     __TITLE_LENGTH = 80
+    __INDENT_SIZE   = 4
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        results_dir_path,
-        results_file_name,
-        work_dir_path,
+        workflow_result,
+        parent_work_dir_path,
         config,
         environment=None
     ):
-        self.__results_dir_path = results_dir_path
-        self.__results_file_name = results_file_name
-        self.__work_dir_path = work_dir_path
+        self.__parent_work_dir_path = parent_work_dir_path
 
         self.__config = config
         self.__environment = environment
 
-        self.__workflow_result = None
+        self.__workflow_result = workflow_result
 
         super().__init__()
 
@@ -1024,60 +966,16 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         return defaults_for_env
 
     @property
-    def results_file_path(self):
-        &#34;&#34;&#34;
-        Get the OS path to the results file.
-        EG:  /tmp/tmpno_qi7np/step-runner-results/step-runner-results.yml
-
-        Returns
-        -------
-        str
-            OS path to the results file.
-        &#34;&#34;&#34;
-        return os.path.join(self.results_dir_path, self.__results_file_name)
-
-    @property
-    def results_dir_path(self):
-        &#34;&#34;&#34;
-        Get the OS path to the results folder.
-        If the results folder does not exist, create it.
-        EG:  /tmp/tmpno_qi7np/step-runner-results
-
-        Returns
-        -------
-        str
-            OS path to the results folder.
-        &#34;&#34;&#34;
-        os.makedirs(self.__results_dir_path, exist_ok=True)
-        return self.__results_dir_path
-
-    @property
     def work_dir_path(self):
-        &#34;&#34;&#34;
-        Get the OS path to the working folder.
-        EG:  /tmp/tmpno_qi7np/step-runner-working
-
-        Returns
-        -------
-        str
-            OS path to the working folder.
-        &#34;&#34;&#34;
-        os.makedirs(self.__work_dir_path, exist_ok=True)
-        return os.path.abspath(self.__work_dir_path)
-
-    @property
-    def work_dir_path_step(self):
-        &#34;&#34;&#34;
-        Get the OS path to the working folder for this step.
+        &#34;&#34;&#34;Get the OS path to the working folder for this step.
         If the folder does not exist, create it.
-        EG:  /tmp/tmpno_qi7np/step-runner-working/stepname
 
         Returns
         -------
         str
             OS path to the working folder plus step name.
         &#34;&#34;&#34;
-        work_dir_path_step = os.path.join(self.work_dir_path, self.step_name)
+        work_dir_path_step = os.path.join(self.__parent_work_dir_path, self.step_name)
         if self.environment:
             work_dir_path_step = os.path.join(work_dir_path_step, self.environment)
         os.makedirs(work_dir_path_step, exist_ok=True)
@@ -1126,10 +1024,6 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             Object containing a list of dictionary of step results
             from previous steps.
         &#34;&#34;&#34;
-        if not self.__workflow_result:
-            self.__workflow_result = WorkflowResult.load_from_pickle_file(
-                pickle_filename=self.__workflow_result_pickle_file_path
-            )
         return self.__workflow_result
 
     @staticmethod
@@ -1200,9 +1094,8 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         Returns
         -------
-        bool
-            True on step run success.
-            False on step run failure.
+        StepResult
+            Results of running this step.
         &#34;&#34;&#34;
 
         StepImplementer.__print_section_title(f&#34;Step Start - {self.step_name}&#34;)
@@ -1273,17 +1166,6 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             step_result.success = False
             step_result.message = str(invalid_error)
 
-        # save the step results
-        self.workflow_result.add_step_result(
-            step_result=step_result
-        )
-        self.workflow_result.write_to_pickle_file(
-            pickle_filename=self.__workflow_result_pickle_file_path
-        )
-        self.workflow_result.write_results_to_yml_file(
-            yml_filename=self.results_file_path
-        )
-
         # print the step run results
         StepImplementer.__print_section_title(
             f&#34;Results - {self.step_name}&#34;,
@@ -1291,13 +1173,17 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             indent=1
         )
 
-        StepImplementer.__print_data(&#39;Results File Path&#39;, self.results_file_path)
-
-        StepImplementer.__print_data(&#39;Results&#39;, step_result.get_step_result_dict())
+        StepImplementer.__print_data(&#39;Environment&#39;, step_result.environment)
+        StepImplementer.__print_data(&#39;Step&#39;, step_result.step_name)
+        StepImplementer.__print_data(&#39;Sub Step&#39;, step_result.sub_step_name)
+        StepImplementer.__print_data(&#39;Sub Step Implementer&#39;, step_result.sub_step_implementer_name)
+        StepImplementer.__print_data(&#39;Success&#39;, step_result.success)
+        StepImplementer.__print_data(&#39;Message&#39;, step_result.message)
+        StepImplementer.__print_data(&#39;Artifacts&#39;, step_result.artifacts_dicts)
 
         StepImplementer.__print_section_title(f&#39;Step End - {self.step_name}&#39;)
 
-        return step_result.success
+        return step_result
 
     def get_value(self, key):
         &#34;&#34;&#34;Get the value for a given key, either from given configuration or from the result
@@ -1305,8 +1191,10 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         Parameters
         ----------
-        key : str
+        key : str, array
             Key to get the configuration value or result value for.
+            If array will get configuration value or result value for first key in list with a
+            value.
 
         Returns
         -------
@@ -1315,24 +1203,34 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             key. Or None if not found.
         &#34;&#34;&#34;
 
-        # first try to get config value
-        config_value = self.get_config_value(key)
-        if config_value is not None:
-            return config_value
+        if isinstance(key, list):
+            keys = key
+        else:
+            keys = [key]
 
-        # if not found config value try to get result value specific to current environment
-        if self.environment:
+        for k in keys:
+            # first try to get config value
+            config_value = self.get_config_value(k)
+            if config_value is not None:
+                return config_value
+
+            # if not found config value try to get result value specific to current environment
+            if self.environment:
+                result_value = self.get_result_value(
+                    artifact_name=k,
+                    environment=self.environment
+                )
+                if result_value is not None:
+                    return result_value
+
+            # last try getting result value from no specific environment
             result_value = self.get_result_value(
-                artifact_name=key,
-                environment=self.environment
+                artifact_name=k
             )
-            if result_value is not None:
-                return result_value
 
-        # last try getting result value from no specific environment
-        result_value = self.get_result_value(
-            artifact_name=key
-        )
+            if result_value:
+                break
+
         return result_value
 
     def get_config_value(self, key):
@@ -1459,39 +1357,20 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             )
         )
 
-    @property
-    def __workflow_result_pickle_file_path(self):
-        &#34;&#34;&#34;
-        Get the OS path to the workflow result pickle file.
-        (The &#39;pickle&#39; file contains the serialized list of step results.)
-        The name of the pickle file is the basename of the results_file_name.
-        EG:
-        If the name of the results_file_name is step-runner-results.yml,
-        then the name of the pickle file is step-runner-results.pkl
-        /tmp/tmp9sau_2j5/step-runner-working/step-runner-results.pkl
+    def create_working_dir_sub_dir(self, sub_dir_relative_path=&#34;&#34;):
+        &#34;&#34;&#34;Create a folder under the working/stepname folder.
 
         Returns
         -------
         str
-           OS path to the workflow pickle (serialized) file.
+            Path to created working sub directory.
         &#34;&#34;&#34;
-        pickle_filename = os.path.splitext(self.__results_file_name)[0] + &#39;.pkl&#39;
-        return os.path.join(self.work_dir_path, pickle_filename)
-
-    def create_working_dir_sub_dir(self, sub_dir_relative_path):
-        &#34;&#34;&#34;
-        Create a folder under the working/stepname folder.
-        EG:  /tmp/tmpno_qi7np/step-runner-working/stepname/sub
-        &#34;&#34;&#34;
-        file_path = os.path.join(self.work_dir_path_step, sub_dir_relative_path)
+        file_path = os.path.join(self.work_dir_path, sub_dir_relative_path)
         os.makedirs(file_path, exist_ok=True)
         return file_path
 
     def write_working_file(self, filename, contents=None):
-        &#34;&#34;&#34;
-        Write content or touch filename in working directory
-        for this step.
-        EG:  /tmp/tmpno_qi7np/step-runner-working/stepname/filename
+        &#34;&#34;&#34;Write content or touch filename in working directory for this step.
 
         Parameters
         ----------
@@ -1506,7 +1385,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             Return a string to the file path
         &#34;&#34;&#34;
         # eg: step-runner-working/step_name
-        file_path = os.path.join(self.work_dir_path_step, filename)
+        file_path = os.path.join(self.work_dir_path, filename)
 
         # sub-directories might be passed filename, eg: foo/filename
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -1549,7 +1428,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         Notes
         -----
-        Indent levels are each are 4 spaces wide.
+        Indent levels are each are StepImplementer.__INDENT_SIZE spaces wide.
 
         Parameters
         ----------
@@ -1560,13 +1439,27 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         indent : int
             Amount to indent the title by and then the content by this +1
         &#34;&#34;&#34;
-        printer = pprint.PrettyPrinter()
+
         StepImplementer.__print_indented(
             text=title,
             indent=indent
         )
+
+        # NOTE: do a json.dumps so that when printing dicts and arrays the {} and [] get put on
+        #       their own lines which there is no way to do with PrettyPrinter.
+        if isinstance(data, (dict, list)):
+            formated_data = json.dumps(
+                data,
+                indent=StepImplementer.__INDENT_SIZE
+            )
+        elif isinstance(data, str):
+            formated_data = data
+        else:
+            printer = pprint.PrettyPrinter()
+            formated_data = printer.pformat(data)
+
         StepImplementer.__print_indented(
-            text=printer.pformat(data),
+            text=formated_data,
             indent=indent + 1
         )
         print()
@@ -1577,7 +1470,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         Notes
         -----
-        Indent levels are each are 4 spaces wide.
+        Indent levels are each are StepImplementer.__INDENT_SIZE spaces wide.
 
         Parameters
         ----------
@@ -1588,7 +1481,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         &#34;&#34;&#34;
         print(textwrap.indent(
             text=text,
-            prefix=&#34; &#34; * (4 * indent)
+            prefix=&#34; &#34; * (StepImplementer.__INDENT_SIZE * indent)
         ))</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -1597,16 +1490,19 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 </ul>
 <h3>Subclasses</h3>
 <ul class="hlist">
+<li><a title="ploigos_step_runner.step_implementers.audit_attestation.opa.OpenPolicyAgent" href="step_implementers/audit_attestation/opa.html#ploigos_step_runner.step_implementers.audit_attestation.opa.OpenPolicyAgent">OpenPolicyAgent</a></li>
 <li><a title="ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah" href="step_implementers/create_container_image/buildah.html#ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah">Buildah</a></li>
 <li><a title="ploigos_step_runner.step_implementers.deploy.argocd.ArgoCD" href="step_implementers/deploy/argocd.html#ploigos_step_runner.step_implementers.deploy.argocd.ArgoCD">ArgoCD</a></li>
+<li><a title="ploigos_step_runner.step_implementers.generate_evidence.generate_evidence.GenerateEvidence" href="step_implementers/generate_evidence/generate_evidence.html#ploigos_step_runner.step_implementers.generate_evidence.generate_evidence.GenerateEvidence">GenerateEvidence</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.git.Git" href="step_implementers/generate_metadata/git.html#ploigos_step_runner.step_implementers.generate_metadata.git.Git">Git</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.maven.Maven" href="step_implementers/generate_metadata/maven.html#ploigos_step_runner.step_implementers.generate_metadata.maven.Maven">Maven</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.npm.Npm" href="step_implementers/generate_metadata/npm.html#ploigos_step_runner.step_implementers.generate_metadata.npm.Npm">Npm</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.semantic_version.SemanticVersion" href="step_implementers/generate_metadata/semantic_version.html#ploigos_step_runner.step_implementers.generate_metadata.semantic_version.SemanticVersion">SemanticVersion</a></li>
 <li><a title="ploigos_step_runner.step_implementers.push_container_image.skopeo.Skopeo" href="step_implementers/push_container_image/skopeo.html#ploigos_step_runner.step_implementers.push_container_image.skopeo.Skopeo">Skopeo</a></li>
+<li><a title="ploigos_step_runner.step_implementers.report.result_artifacts_archive.ResultArtifactsArchive" href="step_implementers/report/result_artifacts_archive.html#ploigos_step_runner.step_implementers.report.result_artifacts_archive.ResultArtifactsArchive">ResultArtifactsArchive</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.maven_generic.MavenGeneric" href="step_implementers/shared/maven_generic.html#ploigos_step_runner.step_implementers.shared.maven_generic.MavenGeneric">MavenGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.openscap_generic.OpenSCAPGeneric" href="step_implementers/shared/openscap_generic.html#ploigos_step_runner.step_implementers.shared.openscap_generic.OpenSCAPGeneric">OpenSCAPGeneric</a></li>
-<li><a title="ploigos_step_runner.step_implementers.sign_container_image.curl_push.CurlPush" href="step_implementers/sign_container_image/curl_push.html#ploigos_step_runner.step_implementers.sign_container_image.curl_push.CurlPush">CurlPush</a></li>
+<li><a title="ploigos_step_runner.step_implementers.shared.rekor_sign_generic.RekorSignGeneric" href="step_implementers/shared/rekor_sign_generic.html#ploigos_step_runner.step_implementers.shared.rekor_sign_generic.RekorSignGeneric">RekorSignGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.sign_container_image.podman_sign.PodmanSign" href="step_implementers/sign_container_image/podman_sign.html#ploigos_step_runner.step_implementers.sign_container_image.podman_sign.PodmanSign">PodmanSign</a></li>
 <li><a title="ploigos_step_runner.step_implementers.static_code_analysis.sonarqube.SonarQube" href="step_implementers/static_code_analysis/sonarqube.html#ploigos_step_runner.step_implementers.static_code_analysis.sonarqube.SonarQube">SonarQube</a></li>
 <li><a title="ploigos_step_runner.step_implementers.tag_source.git.Git" href="step_implementers/tag_source/git.html#ploigos_step_runner.step_implementers.tag_source.git.Git">Git</a></li>
@@ -1743,65 +1639,6 @@ def global_environment_config_defaults(self):
         defaults_for_env = {}
 
     return defaults_for_env</code></pre>
-</details>
-</dd>
-<dt id="ploigos_step_runner.step_implementer.StepImplementer.results_dir_path"><code class="name">var <span class="ident">results_dir_path</span></code></dt>
-<dd>
-<div class="desc"><p>Get the OS path to the results folder.
-If the results folder does not exist, create it.
-EG:
-/tmp/tmpno_qi7np/step-runner-results</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>str</code></dt>
-<dd>OS path to the results folder.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def results_dir_path(self):
-    &#34;&#34;&#34;
-    Get the OS path to the results folder.
-    If the results folder does not exist, create it.
-    EG:  /tmp/tmpno_qi7np/step-runner-results
-
-    Returns
-    -------
-    str
-        OS path to the results folder.
-    &#34;&#34;&#34;
-    os.makedirs(self.__results_dir_path, exist_ok=True)
-    return self.__results_dir_path</code></pre>
-</details>
-</dd>
-<dt id="ploigos_step_runner.step_implementer.StepImplementer.results_file_path"><code class="name">var <span class="ident">results_file_path</span></code></dt>
-<dd>
-<div class="desc"><p>Get the OS path to the results file.
-EG:
-/tmp/tmpno_qi7np/step-runner-results/step-runner-results.yml</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>str</code></dt>
-<dd>OS path to the results file.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def results_file_path(self):
-    &#34;&#34;&#34;
-    Get the OS path to the results file.
-    EG:  /tmp/tmpno_qi7np/step-runner-results/step-runner-results.yml
-
-    Returns
-    -------
-    str
-        OS path to the results file.
-    &#34;&#34;&#34;
-    return os.path.join(self.results_dir_path, self.__results_file_name)</code></pre>
 </details>
 </dd>
 <dt id="ploigos_step_runner.step_implementer.StepImplementer.step_config"><code class="name">var <span class="ident">step_config</span></code></dt>
@@ -1947,39 +1784,8 @@ def sub_step_name(self):
 </dd>
 <dt id="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path"><code class="name">var <span class="ident">work_dir_path</span></code></dt>
 <dd>
-<div class="desc"><p>Get the OS path to the working folder.
-EG:
-/tmp/tmpno_qi7np/step-runner-working</p>
-<h2 id="returns">Returns</h2>
-<dl>
-<dt><code>str</code></dt>
-<dd>OS path to the working folder.</dd>
-</dl></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">@property
-def work_dir_path(self):
-    &#34;&#34;&#34;
-    Get the OS path to the working folder.
-    EG:  /tmp/tmpno_qi7np/step-runner-working
-
-    Returns
-    -------
-    str
-        OS path to the working folder.
-    &#34;&#34;&#34;
-    os.makedirs(self.__work_dir_path, exist_ok=True)
-    return os.path.abspath(self.__work_dir_path)</code></pre>
-</details>
-</dd>
-<dt id="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step"><code class="name">var <span class="ident">work_dir_path_step</span></code></dt>
-<dd>
 <div class="desc"><p>Get the OS path to the working folder for this step.
-If the folder does not exist, create it.
-EG:
-/tmp/tmpno_qi7np/step-runner-working/stepname</p>
+If the folder does not exist, create it.</p>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>str</code></dt>
@@ -1990,18 +1796,16 @@ EG:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def work_dir_path_step(self):
-    &#34;&#34;&#34;
-    Get the OS path to the working folder for this step.
+def work_dir_path(self):
+    &#34;&#34;&#34;Get the OS path to the working folder for this step.
     If the folder does not exist, create it.
-    EG:  /tmp/tmpno_qi7np/step-runner-working/stepname
 
     Returns
     -------
     str
         OS path to the working folder plus step name.
     &#34;&#34;&#34;
-    work_dir_path_step = os.path.join(self.work_dir_path, self.step_name)
+    work_dir_path_step = os.path.join(self.__parent_work_dir_path, self.step_name)
     if self.environment:
         work_dir_path_step = os.path.join(work_dir_path_step, self.environment)
     os.makedirs(work_dir_path_step, exist_ok=True)
@@ -2029,10 +1833,6 @@ def workflow_result(self):
         Object containing a list of dictionary of step results
         from previous steps.
     &#34;&#34;&#34;
-    if not self.__workflow_result:
-        self.__workflow_result = WorkflowResult.load_from_pickle_file(
-            pickle_filename=self.__workflow_result_pickle_file_path
-        )
     return self.__workflow_result</code></pre>
 </details>
 </dd>
@@ -2040,22 +1840,28 @@ def workflow_result(self):
 <h3>Methods</h3>
 <dl>
 <dt id="ploigos_step_runner.step_implementer.StepImplementer.create_working_dir_sub_dir"><code class="name flex">
-<span>def <span class="ident">create_working_dir_sub_dir</span></span>(<span>self, sub_dir_relative_path)</span>
+<span>def <span class="ident">create_working_dir_sub_dir</span></span>(<span>self, sub_dir_relative_path='')</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Create a folder under the working/stepname folder.
-EG:
-/tmp/tmpno_qi7np/step-runner-working/stepname/sub</p></div>
+<div class="desc"><p>Create a folder under the working/stepname folder.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>Path to created working sub directory.</dd>
+</dl></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_working_dir_sub_dir(self, sub_dir_relative_path):
+<pre><code class="python">def create_working_dir_sub_dir(self, sub_dir_relative_path=&#34;&#34;):
+    &#34;&#34;&#34;Create a folder under the working/stepname folder.
+
+    Returns
+    -------
+    str
+        Path to created working sub directory.
     &#34;&#34;&#34;
-    Create a folder under the working/stepname folder.
-    EG:  /tmp/tmpno_qi7np/step-runner-working/stepname/sub
-    &#34;&#34;&#34;
-    file_path = os.path.join(self.work_dir_path_step, sub_dir_relative_path)
+    file_path = os.path.join(self.work_dir_path, sub_dir_relative_path)
     os.makedirs(file_path, exist_ok=True)
     return file_path</code></pre>
 </details>
@@ -2244,8 +2050,10 @@ In this example, 'foo' is the artifact name, return 'bar'
 of any previous step.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
-<dt><strong><code>key</code></strong> :&ensp;<code>str</code></dt>
-<dd>Key to get the configuration value or result value for.</dd>
+<dt><strong><code>key</code></strong> :&ensp;<code>str, array</code></dt>
+<dd>Key to get the configuration value or result value for.
+If array will get configuration value or result value for first key in list with a
+value.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -2263,8 +2071,10 @@ key. Or None if not found.</dd>
 
     Parameters
     ----------
-    key : str
+    key : str, array
         Key to get the configuration value or result value for.
+        If array will get configuration value or result value for first key in list with a
+        value.
 
     Returns
     -------
@@ -2273,24 +2083,34 @@ key. Or None if not found.</dd>
         key. Or None if not found.
     &#34;&#34;&#34;
 
-    # first try to get config value
-    config_value = self.get_config_value(key)
-    if config_value is not None:
-        return config_value
+    if isinstance(key, list):
+        keys = key
+    else:
+        keys = [key]
 
-    # if not found config value try to get result value specific to current environment
-    if self.environment:
+    for k in keys:
+        # first try to get config value
+        config_value = self.get_config_value(k)
+        if config_value is not None:
+            return config_value
+
+        # if not found config value try to get result value specific to current environment
+        if self.environment:
+            result_value = self.get_result_value(
+                artifact_name=k,
+                environment=self.environment
+            )
+            if result_value is not None:
+                return result_value
+
+        # last try getting result value from no specific environment
         result_value = self.get_result_value(
-            artifact_name=key,
-            environment=self.environment
+            artifact_name=k
         )
-        if result_value is not None:
-            return result_value
 
-    # last try getting result value from no specific environment
-    result_value = self.get_result_value(
-        artifact_name=key
-    )
+        if result_value:
+            break
+
     return result_value</code></pre>
 </details>
 </dd>
@@ -2357,9 +2177,8 @@ False otherwise.</dd>
 <div class="desc"><p>Wrapper for running the implemented step.</p>
 <h2 id="returns">Returns</h2>
 <dl>
-<dt><code>bool</code></dt>
-<dd>True on step run success.
-False on step run failure.</dd>
+<dt><code>StepResult</code></dt>
+<dd>Results of running this step.</dd>
 </dl></div>
 <details class="source">
 <summary>
@@ -2370,9 +2189,8 @@ False on step run failure.</dd>
 
     Returns
     -------
-    bool
-        True on step run success.
-        False on step run failure.
+    StepResult
+        Results of running this step.
     &#34;&#34;&#34;
 
     StepImplementer.__print_section_title(f&#34;Step Start - {self.step_name}&#34;)
@@ -2443,17 +2261,6 @@ False on step run failure.</dd>
         step_result.success = False
         step_result.message = str(invalid_error)
 
-    # save the step results
-    self.workflow_result.add_step_result(
-        step_result=step_result
-    )
-    self.workflow_result.write_to_pickle_file(
-        pickle_filename=self.__workflow_result_pickle_file_path
-    )
-    self.workflow_result.write_results_to_yml_file(
-        yml_filename=self.results_file_path
-    )
-
     # print the step run results
     StepImplementer.__print_section_title(
         f&#34;Results - {self.step_name}&#34;,
@@ -2461,23 +2268,24 @@ False on step run failure.</dd>
         indent=1
     )
 
-    StepImplementer.__print_data(&#39;Results File Path&#39;, self.results_file_path)
-
-    StepImplementer.__print_data(&#39;Results&#39;, step_result.get_step_result_dict())
+    StepImplementer.__print_data(&#39;Environment&#39;, step_result.environment)
+    StepImplementer.__print_data(&#39;Step&#39;, step_result.step_name)
+    StepImplementer.__print_data(&#39;Sub Step&#39;, step_result.sub_step_name)
+    StepImplementer.__print_data(&#39;Sub Step Implementer&#39;, step_result.sub_step_implementer_name)
+    StepImplementer.__print_data(&#39;Success&#39;, step_result.success)
+    StepImplementer.__print_data(&#39;Message&#39;, step_result.message)
+    StepImplementer.__print_data(&#39;Artifacts&#39;, step_result.artifacts_dicts)
 
     StepImplementer.__print_section_title(f&#39;Step End - {self.step_name}&#39;)
 
-    return step_result.success</code></pre>
+    return step_result</code></pre>
 </details>
 </dd>
 <dt id="ploigos_step_runner.step_implementer.StepImplementer.write_working_file"><code class="name flex">
 <span>def <span class="ident">write_working_file</span></span>(<span>self, filename, contents=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Write content or touch filename in working directory
-for this step.
-EG:
-/tmp/tmpno_qi7np/step-runner-working/stepname/filename</p>
+<div class="desc"><p>Write content or touch filename in working directory for this step.</p>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>filename</code></strong> :&ensp;<code>str</code></dt>
@@ -2495,10 +2303,7 @@ EG:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def write_working_file(self, filename, contents=None):
-    &#34;&#34;&#34;
-    Write content or touch filename in working directory
-    for this step.
-    EG:  /tmp/tmpno_qi7np/step-runner-working/stepname/filename
+    &#34;&#34;&#34;Write content or touch filename in working directory for this step.
 
     Parameters
     ----------
@@ -2513,7 +2318,7 @@ EG:
         Return a string to the file path
     &#34;&#34;&#34;
     # eg: step-runner-working/step_name
-    file_path = os.path.join(self.work_dir_path_step, filename)
+    file_path = os.path.join(self.work_dir_path, filename)
 
     # sub-directories might be passed filename, eg: foo/filename
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -2580,8 +2385,6 @@ EG:
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults" href="#ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults">global_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults" href="#ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults">global_environment_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.has_config_value" href="#ploigos_step_runner.step_implementer.StepImplementer.has_config_value">has_config_value</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_dir_path" href="#ploigos_step_runner.step_implementer.StepImplementer.results_dir_path">results_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_file_path" href="#ploigos_step_runner.step_implementer.StepImplementer.results_file_path">results_file_path</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.run_step" href="#ploigos_step_runner.step_implementer.StepImplementer.run_step">run_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config" href="#ploigos_step_runner.step_implementer.StepImplementer.step_config">step_config</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides" href="#ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides">step_config_overrides</a></code></li>
@@ -2591,7 +2394,6 @@ EG:
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name" href="#ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name">sub_step_implementer_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_name" href="#ploigos_step_runner.step_implementer.StepImplementer.sub_step_name">sub_step_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path" href="#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path">work_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step" href="#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step">work_dir_path_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.workflow_result" href="#ploigos_step_runner.step_implementer.StepImplementer.workflow_result">workflow_result</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.write_working_file" href="#ploigos_step_runner.step_implementer.StepImplementer.write_working_file">write_working_file</a></code></li>
 </ul>

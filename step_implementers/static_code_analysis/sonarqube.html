@@ -240,7 +240,7 @@ import sys
 import sh
 from ploigos_step_runner import StepImplementer
 from ploigos_step_runner.exceptions import StepRunnerException
-from ploigos_step_runner.step_result import StepResult
+from ploigos_step_runner import StepResult
 
 DEFAULT_CONFIG = {
     &#39;properties&#39;: &#39;./sonar-project.properties&#39;,
@@ -359,6 +359,7 @@ class SonarQube(StepImplementer):
             step_result.message = f&#39;Properties file not found: {properties_file}&#39;
             return step_result
 
+        sonarqube_success = False
         try:
             # Hint:  Call sonar-scanner with sh.sonar_scanner
             #    https://amoffat.github.io/sh/sections/faq.html
@@ -387,6 +388,8 @@ class SonarQube(StepImplementer):
                     _out=sys.stdout,
                     _err=sys.stderr
                 )
+
+            sonarqube_success = True
         except sh.ErrorReturnCode_1 as error: # pylint: disable=no-member
             # Error Code 1: INTERNAL_ERROR
             # See error codes: https://github.com/SonarSource/sonar-scanner-cli/blob/master/src/main/java/org/sonarsource/scanner/cli/Exit.java # pylint: disable=line-too-long
@@ -410,6 +413,12 @@ class SonarQube(StepImplementer):
             name=&#39;sonarqube-result-set&#39;,
             value=f&#39;{working_directory}/report-task.txt&#39;
         )
+
+        step_result.add_evidence(
+            name=&#39;sonarqube-quality-gate-pass&#39;,
+            value=sonarqube_success
+        )
+
         return step_result</code></pre>
 </details>
 </section>
@@ -424,7 +433,7 @@ class SonarQube(StepImplementer):
 <dl>
 <dt id="ploigos_step_runner.step_implementers.static_code_analysis.sonarqube.SonarQube"><code class="flex name class">
 <span>class <span class="ident">SonarQube</span></span>
-<span>(</span><span>results_dir_path, results_file_name, work_dir_path, config, environment=None)</span>
+<span>(</span><span>workflow_result, parent_work_dir_path, config, environment=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>StepImplementer for the tag-source step for SonarQube.</p></div>
@@ -531,6 +540,7 @@ class SonarQube(StepImplementer):
             step_result.message = f&#39;Properties file not found: {properties_file}&#39;
             return step_result
 
+        sonarqube_success = False
         try:
             # Hint:  Call sonar-scanner with sh.sonar_scanner
             #    https://amoffat.github.io/sh/sections/faq.html
@@ -559,6 +569,8 @@ class SonarQube(StepImplementer):
                     _out=sys.stdout,
                     _err=sys.stderr
                 )
+
+            sonarqube_success = True
         except sh.ErrorReturnCode_1 as error: # pylint: disable=no-member
             # Error Code 1: INTERNAL_ERROR
             # See error codes: https://github.com/SonarSource/sonar-scanner-cli/blob/master/src/main/java/org/sonarsource/scanner/cli/Exit.java # pylint: disable=line-too-long
@@ -582,6 +594,12 @@ class SonarQube(StepImplementer):
             name=&#39;sonarqube-result-set&#39;,
             value=f&#39;{working_directory}/report-task.txt&#39;
         )
+
+        step_result.add_evidence(
+            name=&#39;sonarqube-quality-gate-pass&#39;,
+            value=sonarqube_success
+        )
+
         return step_result</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -603,8 +621,6 @@ class SonarQube(StepImplementer):
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults">global_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults">global_environment_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.has_config_value" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.has_config_value">has_config_value</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_dir_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.results_dir_path">results_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_file_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.results_file_path">results_file_path</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.run_step" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.run_step">run_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.step_config">step_config</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides">step_config_overrides</a></code></li>
@@ -614,7 +630,6 @@ class SonarQube(StepImplementer):
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name">sub_step_implementer_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_name" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.sub_step_name">sub_step_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path">work_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step">work_dir_path_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.workflow_result" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.workflow_result">workflow_result</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.write_working_file" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.write_working_file">write_working_file</a></code></li>
 </ul>

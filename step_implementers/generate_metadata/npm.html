@@ -101,7 +101,7 @@ import json
 import os.path
 
 from ploigos_step_runner import StepImplementer
-from ploigos_step_runner.step_result import StepResult
+from ploigos_step_runner import StepResult
 
 DEFAULT_CONFIG = {
     &#39;package-file&#39;: &#39;package.json&#39;
@@ -206,7 +206,7 @@ class Npm(StepImplementer): # pylint: disable=too-few-public-methods
 <dl>
 <dt id="ploigos_step_runner.step_implementers.generate_metadata.npm.Npm"><code class="flex name class">
 <span>class <span class="ident">Npm</span></span>
-<span>(</span><span>results_dir_path, results_file_name, work_dir_path, config, environment=None)</span>
+<span>(</span><span>workflow_result, parent_work_dir_path, config, environment=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p><code>StepImplementer</code> for the <code>generate-metadata</code> step using NPM.</p></div>
@@ -316,8 +316,6 @@ class Npm(StepImplementer): # pylint: disable=too-few-public-methods
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults">global_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults">global_environment_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.has_config_value" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.has_config_value">has_config_value</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_dir_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.results_dir_path">results_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_file_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.results_file_path">results_file_path</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.run_step" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.run_step">run_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.step_config">step_config</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides">step_config_overrides</a></code></li>
@@ -327,7 +325,6 @@ class Npm(StepImplementer): # pylint: disable=too-few-public-methods
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name">sub_step_implementer_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_name" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.sub_step_name">sub_step_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path">work_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step">work_dir_path_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.workflow_result" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.workflow_result">workflow_result</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.write_working_file" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.write_working_file">write_working_file</a></code></li>
 </ul>

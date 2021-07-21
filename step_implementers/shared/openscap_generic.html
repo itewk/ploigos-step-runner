@@ -38,28 +38,18 @@ from runtime configuration.</p>
 </thead>
 <tbody>
 <tr>
+<td><code>image-tar-file</code></td>
+<td>Yes</td>
+<td></td>
+<td>Path to container image tar file to scan</td>
+</tr>
+<tr>
 <td><code>oscap-input-definitions-uri</code></td>
 <td>Yes</td>
 <td></td>
-<td>URI to the OpenSCAP definitions file</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>to do the evaluation with.</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>Must use protocol file://</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>Must have file extension .xml</td>
+<td>URI to the OpenSCAP definitions file
+to do the evaluation with.
+Must use protocol file://</td>
 </tr>
 <tr>
 <td><code>oscap-profile</code></td>
@@ -71,85 +61,23 @@ from runtime configuration.</p>
 <td><code>oscap-tailoring-uri</code></td>
 <td>No</td>
 <td></td>
-<td>URI to OpenSCAP tailoring file</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>to do the evaluation with.</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>Must use protocol file://</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>Must have file extension .xml</td>
+<td>URI to OpenSCAP tailoring file
+to do the evaluation with.
+Must use protocol file://</td>
 </tr>
 <tr>
 <td><code>oscap-fetch-remote-resources</code></td>
 <td>No</td>
 <td>True</td>
-<td>For Source DataStream and XCCDF files</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>that have remote references fetch them if</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>True, else don't.</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>WARNING: evaluations will not be complete</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>if input defintions require remote</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>resources and this is not True.</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>For disconnected environments the remote</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>references should be brought to an internal</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-<td>mirror.</td>
+<td>For Source DataStream and XCCDF files
+that have remote references fetch them if
+True, else don't.
+<br/><br/>
+<strong>WARNING</strong>: evaluations will not be
+complete if input defintions require
+remote resources and this is not True.
+For disconnected environments the remote
+internal mirror.</td>
 </tr>
 </tbody>
 </table>
@@ -208,27 +136,27 @@ Step configuration expected as input to this step.
 Could come from either configuration file or
 from runtime configuration.
 
-| Configuration Key              | Required? | Default | Description
-|--------------------------------|-----------|---------|-----------
-| `oscap-input-definitions-uri`  | Yes       |         | URI to the OpenSCAP definitions file
-|                                |           |         | to do the evaluation with.
-|                                |           |         | Must use protocol file://|http://|https://.
-|                                |           |         | Must have file extension .xml|.bz2.
-| `oscap-profile`                | No        |         | OpenSCAP profile to evaluate.
-| `oscap-tailoring-uri`          | No        |         | URI to OpenSCAP tailoring file
-|                                |           |         | to do the evaluation with.
-|                                |           |         | Must use protocol file://|http://|https://.
-|                                |           |         | Must have file extension .xml|.bz2.
-| `oscap-fetch-remote-resources` | No        | True    | For Source DataStream and XCCDF files
-|                                |           |         | that have remote references fetch them if
-|                                |           |         | True, else don&#39;t.
-|                                |           |         |
-|                                |           |         | WARNING: evaluations will not be complete
-|                                |           |         | if input defintions require remote
-|                                |           |         | resources and this is not True.
-|                                |           |         | For disconnected environments the remote
-|                                |           |         | references should be brought to an internal
-|                                |           |         | mirror.
+ Configuration Key             | Required? | Default | Description
+-------------------------------|-----------|---------|-----------
+`image-tar-file`               | Yes       |         | Path to container image tar file to scan
+`oscap-input-definitions-uri`  | Yes       |         | URI to the OpenSCAP definitions file \
+                                                      to do the evaluation with. \
+                                                      Must use protocol file://|http://|https://. \
+                                                      Must have file extension .xml|.bz2.
+`oscap-profile`                | No        |         | OpenSCAP profile to evaluate.
+`oscap-tailoring-uri`          | No        |         | URI to OpenSCAP tailoring file \
+                                                      to do the evaluation with. \
+                                                      Must use protocol file://|http://|https://. \
+                                                      Must have file extension .xml|.bz2.
+`oscap-fetch-remote-resources` | No        | True    | For Source DataStream and XCCDF files \
+                                                       that have remote references fetch them if \
+                                                       True, else don&#39;t. \
+                                                       &lt;br/&gt;&lt;br/&gt; \
+                                                       **WARNING**: evaluations will not be \
+                                                       complete if input defintions require \
+                                                       remote resources and this is not True. \
+                                                       For disconnected environments the remote \
+                                                       internal mirror.
 
 Expected Previous Step Results
 ------------------------------
@@ -466,11 +394,11 @@ class OpenSCAPGeneric(StepImplementer):
                 oscap_input_definitions_uri = self.get_value(&#39;oscap-input-definitions-uri&#39;)
                 print(f&#34;\nDownload input definitions: {oscap_input_definitions_uri}&#34;)
                 oscap_input_file = download_and_decompress_source_to_destination(
-                    source_url=oscap_input_definitions_uri,
-                    destination_dir=self.work_dir_path_step
+                    source_uri=oscap_input_definitions_uri,
+                    destination_dir=self.work_dir_path
                 )
                 print(f&#34;Downloaded input definitions to: {oscap_input_file}&#34;)
-            except (RuntimeError, AssertionError) as error:
+            except (RuntimeError, ValueError) as error:
                 raise StepRunnerException(
                     f&#34;Error downloading OpenSCAP input file: {error}&#34;
                 ) from error
@@ -482,11 +410,11 @@ class OpenSCAPGeneric(StepImplementer):
                 if oscap_tailoring_file_uri:
                     print(f&#34;\nDownload oscap tailoring file: {oscap_tailoring_file_uri}&#34;)
                     oscap_tailoring_file = download_and_decompress_source_to_destination(
-                        source_url=oscap_tailoring_file_uri,
-                        destination_dir=self.work_dir_path_step
+                        source_uri=oscap_tailoring_file_uri,
+                        destination_dir=self.work_dir_path
                     )
                     print(f&#34;Download oscap tailoring file to: {oscap_tailoring_file}&#34;)
-            except (RuntimeError, AssertionError) as error:
+            except (RuntimeError, ValueError) as error:
                 raise StepRunnerException(
                     f&#34;Error downloading OpenSCAP tailoring file: {error}&#34;
                 ) from error
@@ -881,7 +809,7 @@ class OpenSCAPGeneric(StepImplementer):
 <dl>
 <dt id="ploigos_step_runner.step_implementers.shared.openscap_generic.OpenSCAPGeneric"><code class="flex name class">
 <span>class <span class="ident">OpenSCAPGeneric</span></span>
-<span>(</span><span>results_dir_path, results_file_name, work_dir_path, config, environment=None)</span>
+<span>(</span><span>workflow_result, parent_work_dir_path, config, environment=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>A generic OpenSCAP step implementer that can be used for more then one step.</p>
@@ -1085,11 +1013,11 @@ class OpenSCAPGeneric(StepImplementer):
                 oscap_input_definitions_uri = self.get_value(&#39;oscap-input-definitions-uri&#39;)
                 print(f&#34;\nDownload input definitions: {oscap_input_definitions_uri}&#34;)
                 oscap_input_file = download_and_decompress_source_to_destination(
-                    source_url=oscap_input_definitions_uri,
-                    destination_dir=self.work_dir_path_step
+                    source_uri=oscap_input_definitions_uri,
+                    destination_dir=self.work_dir_path
                 )
                 print(f&#34;Downloaded input definitions to: {oscap_input_file}&#34;)
-            except (RuntimeError, AssertionError) as error:
+            except (RuntimeError, ValueError) as error:
                 raise StepRunnerException(
                     f&#34;Error downloading OpenSCAP input file: {error}&#34;
                 ) from error
@@ -1101,11 +1029,11 @@ class OpenSCAPGeneric(StepImplementer):
                 if oscap_tailoring_file_uri:
                     print(f&#34;\nDownload oscap tailoring file: {oscap_tailoring_file_uri}&#34;)
                     oscap_tailoring_file = download_and_decompress_source_to_destination(
-                        source_url=oscap_tailoring_file_uri,
-                        destination_dir=self.work_dir_path_step
+                        source_uri=oscap_tailoring_file_uri,
+                        destination_dir=self.work_dir_path
                     )
                     print(f&#34;Download oscap tailoring file to: {oscap_tailoring_file}&#34;)
-            except (RuntimeError, AssertionError) as error:
+            except (RuntimeError, ValueError) as error:
                 raise StepRunnerException(
                     f&#34;Error downloading OpenSCAP tailoring file: {error}&#34;
                 ) from error
@@ -1535,8 +1463,6 @@ class OpenSCAPGeneric(StepImplementer):
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.global_config_defaults">global_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.global_environment_config_defaults">global_environment_config_defaults</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.has_config_value" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.has_config_value">has_config_value</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_dir_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.results_dir_path">results_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.results_file_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.results_file_path">results_file_path</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.run_step" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.run_step">run_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.step_config">step_config</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.step_config_overrides">step_config_overrides</a></code></li>
@@ -1546,7 +1472,6 @@ class OpenSCAPGeneric(StepImplementer):
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.sub_step_implementer_name">sub_step_implementer_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.sub_step_name" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.sub_step_name">sub_step_name</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path">work_dir_path</a></code></li>
-<li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.work_dir_path_step">work_dir_path_step</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.workflow_result" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.workflow_result">workflow_result</a></code></li>
 <li><code><a title="ploigos_step_runner.step_implementer.StepImplementer.write_working_file" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer.write_working_file">write_working_file</a></code></li>
 </ul>
