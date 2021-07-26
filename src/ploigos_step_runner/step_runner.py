@@ -1,7 +1,6 @@
 """Constructs a given named StepImplementer using a given configuration, and runs it.
 """
 import os
-import fcntl
 
 from ploigos_step_runner.config.config import Config
 from ploigos_step_runner.exceptions import StepRunnerException
@@ -169,24 +168,12 @@ class StepRunner:
             self.workflow_result.add_step_result(
                 step_result=step_result
             )
-
-            # acquire the pickle lock
-            with open(self.workflow_result_pickle_file_path + '.lock', 'w') as pickle_lock:
-                fcntl.flock(pickle_lock, fcntl.LOCK_EX)
-
-                # we are locked
-                try:
-                    self.workflow_result.merge_with_pickle_file(
-                        pickle_filename=self.workflow_result_pickle_file_path
-                    )
-                    self.workflow_result.write_to_pickle_file(
-                        pickle_filename=self.workflow_result_pickle_file_path
-                    )
-                    self.workflow_result.write_results_to_yml_file(
-                        yml_filename=self.results_file_path
-                    )
-                finally:
-                    fcntl.flock(pickle_lock, fcntl.LOCK_UN)
+            self.workflow_result.write_to_pickle_file(
+                pickle_filename=self.workflow_result_pickle_file_path
+            )
+            self.workflow_result.write_results_to_yml_file(
+                yml_filename=self.results_file_path
+            )
 
             # aggregate success
             aggregate_success = (aggregate_success and step_result.success)
