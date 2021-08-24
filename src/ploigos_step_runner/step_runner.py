@@ -175,6 +175,28 @@ class StepRunner:
                 yml_filename=self.results_file_path
             )
 
+            # acquire the pickle lock
+            with open(
+                self.workflow_result_pickle_file_path + '.lock',
+                'w',
+                encoding='utf-8'
+            ) as pickle_lock:
+                fcntl.flock(pickle_lock, fcntl.LOCK_EX)
+
+                # we are locked
+                try:
+                    self.workflow_result.merge_with_pickle_file(
+                        pickle_filename=self.workflow_result_pickle_file_path
+                    )
+                    self.workflow_result.write_to_pickle_file(
+                        pickle_filename=self.workflow_result_pickle_file_path
+                    )
+                    self.workflow_result.write_results_to_yml_file(
+                        yml_filename=self.results_file_path
+                    )
+                finally:
+                    fcntl.flock(pickle_lock, fcntl.LOCK_UN)
+
             # aggregate success
             aggregate_success = (aggregate_success and step_result.success)
 
