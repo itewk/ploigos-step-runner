@@ -316,11 +316,13 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             Results of running this step.
         &#34;&#34;&#34;
 
-        StepImplementer.__print_section_title(f&#34;Step Start - {self.step_name}&#34;)
+        StepImplementer.__print_section_title(
+            f&#34;Step Start - {self.step_name} ({self.sub_step_name})&#34;
+        )
 
         # print information about the configuration
         StepImplementer.__print_section_title(
-            f&#34;Configuration - {self.step_name} - {self.sub_step_name}&#34;,
+            f&#34;Configuration - {self.step_name} ({self.sub_step_name})&#34;,
             div_char=&#34;-&#34;,
             indent=1
         )
@@ -363,7 +365,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
             # run the step
             StepImplementer.__print_section_title(
-                f&#34;Standard Out - {self.step_name}&#34;,
+                f&#34;Standard Out - {self.step_name} ({self.sub_step_name})&#34;,
                 div_char=&#34;-&#34;,
                 indent=1
             )
@@ -379,6 +381,8 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
             with redirect_stdout(indented_stdout), redirect_stderr(indented_stderr):
                 step_result = self._run_step()
+                sys.stdout.flush()
+                sys.stderr.flush()
         except AssertionError as invalid_error:
             step_result = StepResult.from_step_implementer(self)
             step_result.success = False
@@ -386,7 +390,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         # print the step run results
         StepImplementer.__print_section_title(
-            f&#34;Results - {self.step_name}&#34;,
+            f&#34;Results - {self.step_name} ({self.sub_step_name})&#34;,
             div_char=&#34;-&#34;,
             indent=1
         )
@@ -398,8 +402,9 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         StepImplementer.__print_data(&#39;Success&#39;, step_result.success)
         StepImplementer.__print_data(&#39;Message&#39;, step_result.message)
         StepImplementer.__print_data(&#39;Artifacts&#39;, step_result.artifacts_dicts)
+        StepImplementer.__print_data(&#39;Evidence&#39;, step_result.evidence_dicts)
 
-        StepImplementer.__print_section_title(f&#39;Step End - {self.step_name}&#39;)
+        StepImplementer.__print_section_title(f&#39;Step End - {self.step_name} ({self.sub_step_name})&#39;)
 
         return step_result
 
@@ -1098,11 +1103,13 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             Results of running this step.
         &#34;&#34;&#34;
 
-        StepImplementer.__print_section_title(f&#34;Step Start - {self.step_name}&#34;)
+        StepImplementer.__print_section_title(
+            f&#34;Step Start - {self.step_name} ({self.sub_step_name})&#34;
+        )
 
         # print information about the configuration
         StepImplementer.__print_section_title(
-            f&#34;Configuration - {self.step_name} - {self.sub_step_name}&#34;,
+            f&#34;Configuration - {self.step_name} ({self.sub_step_name})&#34;,
             div_char=&#34;-&#34;,
             indent=1
         )
@@ -1145,7 +1152,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
             # run the step
             StepImplementer.__print_section_title(
-                f&#34;Standard Out - {self.step_name}&#34;,
+                f&#34;Standard Out - {self.step_name} ({self.sub_step_name})&#34;,
                 div_char=&#34;-&#34;,
                 indent=1
             )
@@ -1161,6 +1168,8 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
             with redirect_stdout(indented_stdout), redirect_stderr(indented_stderr):
                 step_result = self._run_step()
+                sys.stdout.flush()
+                sys.stderr.flush()
         except AssertionError as invalid_error:
             step_result = StepResult.from_step_implementer(self)
             step_result.success = False
@@ -1168,7 +1177,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 
         # print the step run results
         StepImplementer.__print_section_title(
-            f&#34;Results - {self.step_name}&#34;,
+            f&#34;Results - {self.step_name} ({self.sub_step_name})&#34;,
             div_char=&#34;-&#34;,
             indent=1
         )
@@ -1180,8 +1189,9 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         StepImplementer.__print_data(&#39;Success&#39;, step_result.success)
         StepImplementer.__print_data(&#39;Message&#39;, step_result.message)
         StepImplementer.__print_data(&#39;Artifacts&#39;, step_result.artifacts_dicts)
+        StepImplementer.__print_data(&#39;Evidence&#39;, step_result.evidence_dicts)
 
-        StepImplementer.__print_section_title(f&#39;Step End - {self.step_name}&#39;)
+        StepImplementer.__print_section_title(f&#39;Step End - {self.step_name} ({self.sub_step_name})&#39;)
 
         return step_result
 
@@ -1494,6 +1504,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 <li><a title="ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah" href="step_implementers/create_container_image/buildah.html#ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah">Buildah</a></li>
 <li><a title="ploigos_step_runner.step_implementers.deploy.argocd.ArgoCD" href="step_implementers/deploy/argocd.html#ploigos_step_runner.step_implementers.deploy.argocd.ArgoCD">ArgoCD</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_evidence.generate_evidence.GenerateEvidence" href="step_implementers/generate_evidence/generate_evidence.html#ploigos_step_runner.step_implementers.generate_evidence.generate_evidence.GenerateEvidence">GenerateEvidence</a></li>
+<li><a title="ploigos_step_runner.step_implementers.generate_metadata.commitizen.Commitizen" href="step_implementers/generate_metadata/commitizen.html#ploigos_step_runner.step_implementers.generate_metadata.commitizen.Commitizen">Commitizen</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.git.Git" href="step_implementers/generate_metadata/git.html#ploigos_step_runner.step_implementers.generate_metadata.git.Git">Git</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.maven.Maven" href="step_implementers/generate_metadata/maven.html#ploigos_step_runner.step_implementers.generate_metadata.maven.Maven">Maven</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.npm.Npm" href="step_implementers/generate_metadata/npm.html#ploigos_step_runner.step_implementers.generate_metadata.npm.Npm">Npm</a></li>
@@ -1501,6 +1512,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 <li><a title="ploigos_step_runner.step_implementers.push_container_image.skopeo.Skopeo" href="step_implementers/push_container_image/skopeo.html#ploigos_step_runner.step_implementers.push_container_image.skopeo.Skopeo">Skopeo</a></li>
 <li><a title="ploigos_step_runner.step_implementers.report.result_artifacts_archive.ResultArtifactsArchive" href="step_implementers/report/result_artifacts_archive.html#ploigos_step_runner.step_implementers.report.result_artifacts_archive.ResultArtifactsArchive">ResultArtifactsArchive</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.maven_generic.MavenGeneric" href="step_implementers/shared/maven_generic.html#ploigos_step_runner.step_implementers.shared.maven_generic.MavenGeneric">MavenGeneric</a></li>
+<li><a title="ploigos_step_runner.step_implementers.shared.npm_generic.NpmGeneric" href="step_implementers/shared/npm_generic.html#ploigos_step_runner.step_implementers.shared.npm_generic.NpmGeneric">NpmGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.openscap_generic.OpenSCAPGeneric" href="step_implementers/shared/openscap_generic.html#ploigos_step_runner.step_implementers.shared.openscap_generic.OpenSCAPGeneric">OpenSCAPGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.rekor_sign_generic.RekorSignGeneric" href="step_implementers/shared/rekor_sign_generic.html#ploigos_step_runner.step_implementers.shared.rekor_sign_generic.RekorSignGeneric">RekorSignGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.sign_container_image.podman_sign.PodmanSign" href="step_implementers/sign_container_image/podman_sign.html#ploigos_step_runner.step_implementers.sign_container_image.podman_sign.PodmanSign">PodmanSign</a></li>
@@ -2193,11 +2205,13 @@ False otherwise.</dd>
         Results of running this step.
     &#34;&#34;&#34;
 
-    StepImplementer.__print_section_title(f&#34;Step Start - {self.step_name}&#34;)
+    StepImplementer.__print_section_title(
+        f&#34;Step Start - {self.step_name} ({self.sub_step_name})&#34;
+    )
 
     # print information about the configuration
     StepImplementer.__print_section_title(
-        f&#34;Configuration - {self.step_name} - {self.sub_step_name}&#34;,
+        f&#34;Configuration - {self.step_name} ({self.sub_step_name})&#34;,
         div_char=&#34;-&#34;,
         indent=1
     )
@@ -2240,7 +2254,7 @@ False otherwise.</dd>
 
         # run the step
         StepImplementer.__print_section_title(
-            f&#34;Standard Out - {self.step_name}&#34;,
+            f&#34;Standard Out - {self.step_name} ({self.sub_step_name})&#34;,
             div_char=&#34;-&#34;,
             indent=1
         )
@@ -2256,6 +2270,8 @@ False otherwise.</dd>
 
         with redirect_stdout(indented_stdout), redirect_stderr(indented_stderr):
             step_result = self._run_step()
+            sys.stdout.flush()
+            sys.stderr.flush()
     except AssertionError as invalid_error:
         step_result = StepResult.from_step_implementer(self)
         step_result.success = False
@@ -2263,7 +2279,7 @@ False otherwise.</dd>
 
     # print the step run results
     StepImplementer.__print_section_title(
-        f&#34;Results - {self.step_name}&#34;,
+        f&#34;Results - {self.step_name} ({self.sub_step_name})&#34;,
         div_char=&#34;-&#34;,
         indent=1
     )
@@ -2275,8 +2291,9 @@ False otherwise.</dd>
     StepImplementer.__print_data(&#39;Success&#39;, step_result.success)
     StepImplementer.__print_data(&#39;Message&#39;, step_result.message)
     StepImplementer.__print_data(&#39;Artifacts&#39;, step_result.artifacts_dicts)
+    StepImplementer.__print_data(&#39;Evidence&#39;, step_result.evidence_dicts)
 
-    StepImplementer.__print_section_title(f&#39;Step End - {self.step_name}&#39;)
+    StepImplementer.__print_section_title(f&#39;Step End - {self.step_name} ({self.sub_step_name})&#39;)
 
     return step_result</code></pre>
 </details>
