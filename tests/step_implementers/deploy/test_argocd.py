@@ -362,7 +362,7 @@ class TestStepImplementerDeployArgoCD_run_step(TestStepImplementerDeployArgoCDBa
             argocd_app_create_or_update_mock.assert_called_once_with(
                 argocd_app_name='test-app-name',
                 repo=step_config['deployment-config-repo'],
-                revision='feature/test',
+                revision='v0.42.0',
                 path=step_config['deployment-config-helm-chart-path'],
                 dest_server='https://kubernetes.default.svc',
                 auto_sync=True,
@@ -516,7 +516,7 @@ class TestStepImplementerDeployArgoCD_run_step(TestStepImplementerDeployArgoCDBa
             argocd_app_create_or_update_mock.assert_called_once_with(
                 argocd_app_name='test-app-name',
                 repo=step_config['deployment-config-repo'],
-                revision='feature/test',
+                revision='v0.42.0',
                 path=step_config['deployment-config-helm-chart-path'],
                 dest_server='https://kubernetes.default.svc',
                 auto_sync=True,
