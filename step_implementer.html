@@ -458,6 +458,17 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         &#34;&#34;&#34;Get the value for a given key, either from given configuration or from the result
         of any previous step.
 
+        From least precedence to highest precedence.
+
+            1. defaults
+            2. Global Configuration Defaults (self.global_config_defaults)
+            3. Global Environment Configuration Defaults (self.global_environment_config_defaults)
+            4. Previous step result in same environment as this step
+            5. Previous step result in any environment
+            6. Step Configuration ( self.step_config)
+            7. Step Environment Configuration (self.step_environment_config)
+            8. Step Configuration Runtime Overrides (step_config_runtime_overrides)
+
         Parameters
         ----------
         key : str, array
@@ -477,12 +488,16 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         else:
             keys = [key]
 
+        # first try to get config value (without defaults) from any of the keys (in order)
+        # NOTE: do this in its own loop so user config values for any given key are always
+        #       prioritized over result values from any of the keys
         for k in keys:
-            # first try to get config value
-            config_value = self.get_config_value(k)
+            config_value = self.get_config_value(k, with_defaults=False)
             if config_value is not None:
                 return config_value
 
+        # second try to get result value from any of the given keys (in order)
+        for k in keys:
             # if not found config value try to get result value specific to current environment
             if self.environment:
                 result_value = self.get_result_value(
@@ -492,17 +507,24 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
                 if result_value is not None:
                     return result_value
 
-            # last try getting result value from no specific environment
+            # try getting result value from no specific environment
             result_value = self.get_result_value(
                 artifact_name=k
             )
+            if result_value is not None:
+                return result_value
 
-            if result_value:
-                break
+        # last get config from defaults
+        # NOTE: do this in separate loop so none default values are prioritized for all keys
+        #       over any default values for any of the keys
+        for k in keys:
+            config_value_default = self.get_config_value(k, with_defaults=True)
+            if config_value_default is not None:
+                return config_value_default
 
-        return result_value
+        return None
 
-    def get_config_value(self, key):
+    def get_config_value(self, key, with_defaults=True):
         &#34;&#34;&#34;Convenience function for self.config.get_config_value.
 
         Get the configuration value for a given configuration key from the
@@ -526,6 +548,8 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         ----------
         key : str
             Key to get the configuration value for.
+        with_defaults : bool
+            If True then consider defaults, else if False, only consider user specified config.
 
         Returns
         -------
@@ -533,10 +557,16 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             Value of the given configuration key or None if one does not exist
             for this sub step in the given context with the given defaults.
         &#34;&#34;&#34;
+        if with_defaults:
+            defaults = self.step_implementer_config_defaults()
+        else:
+            defaults = None
+
         return self.config.get_config_value(
-            key,
-            self.environment,
-            self.step_implementer_config_defaults())
+            key=key,
+            environment=self.environment,
+            defaults=defaults
+        )
 
     def get_copy_of_runtime_step_config(self):
         &#34;&#34;&#34;Convenience function for self.config.get_copy_of_runtime_step_config
@@ -1259,6 +1289,17 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         &#34;&#34;&#34;Get the value for a given key, either from given configuration or from the result
         of any previous step.
 
+        From least precedence to highest precedence.
+
+            1. defaults
+            2. Global Configuration Defaults (self.global_config_defaults)
+            3. Global Environment Configuration Defaults (self.global_environment_config_defaults)
+            4. Previous step result in same environment as this step
+            5. Previous step result in any environment
+            6. Step Configuration ( self.step_config)
+            7. Step Environment Configuration (self.step_environment_config)
+            8. Step Configuration Runtime Overrides (step_config_runtime_overrides)
+
         Parameters
         ----------
         key : str, array
@@ -1278,12 +1319,16 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         else:
             keys = [key]
 
+        # first try to get config value (without defaults) from any of the keys (in order)
+        # NOTE: do this in its own loop so user config values for any given key are always
+        #       prioritized over result values from any of the keys
         for k in keys:
-            # first try to get config value
-            config_value = self.get_config_value(k)
+            config_value = self.get_config_value(k, with_defaults=False)
             if config_value is not None:
                 return config_value
 
+        # second try to get result value from any of the given keys (in order)
+        for k in keys:
             # if not found config value try to get result value specific to current environment
             if self.environment:
                 result_value = self.get_result_value(
@@ -1293,17 +1338,24 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
                 if result_value is not None:
                     return result_value
 
-            # last try getting result value from no specific environment
+            # try getting result value from no specific environment
             result_value = self.get_result_value(
                 artifact_name=k
             )
+            if result_value is not None:
+                return result_value
 
-            if result_value:
-                break
+        # last get config from defaults
+        # NOTE: do this in separate loop so none default values are prioritized for all keys
+        #       over any default values for any of the keys
+        for k in keys:
+            config_value_default = self.get_config_value(k, with_defaults=True)
+            if config_value_default is not None:
+                return config_value_default
 
-        return result_value
+        return None
 
-    def get_config_value(self, key):
+    def get_config_value(self, key, with_defaults=True):
         &#34;&#34;&#34;Convenience function for self.config.get_config_value.
 
         Get the configuration value for a given configuration key from the
@@ -1327,6 +1379,8 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
         ----------
         key : str
             Key to get the configuration value for.
+        with_defaults : bool
+            If True then consider defaults, else if False, only consider user specified config.
 
         Returns
         -------
@@ -1334,10 +1388,16 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
             Value of the given configuration key or None if one does not exist
             for this sub step in the given context with the given defaults.
         &#34;&#34;&#34;
+        if with_defaults:
+            defaults = self.step_implementer_config_defaults()
+        else:
+            defaults = None
+
         return self.config.get_config_value(
-            key,
-            self.environment,
-            self.step_implementer_config_defaults())
+            key=key,
+            environment=self.environment,
+            defaults=defaults
+        )
 
     def get_copy_of_runtime_step_config(self):
         &#34;&#34;&#34;Convenience function for self.config.get_copy_of_runtime_step_config
@@ -1583,7 +1643,7 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 <ul class="hlist">
 <li><a title="ploigos_step_runner.step_implementers.audit_attestation.opa.OpenPolicyAgent" href="step_implementers/audit_attestation/opa.html#ploigos_step_runner.step_implementers.audit_attestation.opa.OpenPolicyAgent">OpenPolicyAgent</a></li>
 <li><a title="ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah" href="step_implementers/create_container_image/buildah.html#ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah">Buildah</a></li>
-<li><a title="ploigos_step_runner.step_implementers.deploy.argocd.ArgoCD" href="step_implementers/deploy/argocd.html#ploigos_step_runner.step_implementers.deploy.argocd.ArgoCD">ArgoCD</a></li>
+<li><a title="ploigos_step_runner.step_implementers.create_container_image.source_to_image.SourceToImage" href="step_implementers/create_container_image/source_to_image.html#ploigos_step_runner.step_implementers.create_container_image.source_to_image.SourceToImage">SourceToImage</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_evidence.generate_evidence.GenerateEvidence" href="step_implementers/generate_evidence/generate_evidence.html#ploigos_step_runner.step_implementers.generate_evidence.generate_evidence.GenerateEvidence">GenerateEvidence</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.commitizen.Commitizen" href="step_implementers/generate_metadata/commitizen.html#ploigos_step_runner.step_implementers.generate_metadata.commitizen.Commitizen">Commitizen</a></li>
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.git.Git" href="step_implementers/generate_metadata/git.html#ploigos_step_runner.step_implementers.generate_metadata.git.Git">Git</a></li>
@@ -1592,10 +1652,12 @@ class StepImplementer(ABC):  # pylint: disable=too-many-instance-attributes
 <li><a title="ploigos_step_runner.step_implementers.generate_metadata.semantic_version.SemanticVersion" href="step_implementers/generate_metadata/semantic_version.html#ploigos_step_runner.step_implementers.generate_metadata.semantic_version.SemanticVersion">SemanticVersion</a></li>
 <li><a title="ploigos_step_runner.step_implementers.push_container_image.skopeo.Skopeo" href="step_implementers/push_container_image/skopeo.html#ploigos_step_runner.step_implementers.push_container_image.skopeo.Skopeo">Skopeo</a></li>
 <li><a title="ploigos_step_runner.step_implementers.report.result_artifacts_archive.ResultArtifactsArchive" href="step_implementers/report/result_artifacts_archive.html#ploigos_step_runner.step_implementers.report.result_artifacts_archive.ResultArtifactsArchive">ResultArtifactsArchive</a></li>
+<li><a title="ploigos_step_runner.step_implementers.shared.argocd_generic.ArgoCDGeneric" href="step_implementers/shared/argocd_generic.html#ploigos_step_runner.step_implementers.shared.argocd_generic.ArgoCDGeneric">ArgoCDGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.maven_generic.MavenGeneric" href="step_implementers/shared/maven_generic.html#ploigos_step_runner.step_implementers.shared.maven_generic.MavenGeneric">MavenGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.npm_generic.NpmGeneric" href="step_implementers/shared/npm_generic.html#ploigos_step_runner.step_implementers.shared.npm_generic.NpmGeneric">NpmGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.openscap_generic.OpenSCAPGeneric" href="step_implementers/shared/openscap_generic.html#ploigos_step_runner.step_implementers.shared.openscap_generic.OpenSCAPGeneric">OpenSCAPGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.shared.rekor_sign_generic.RekorSignGeneric" href="step_implementers/shared/rekor_sign_generic.html#ploigos_step_runner.step_implementers.shared.rekor_sign_generic.RekorSignGeneric">RekorSignGeneric</a></li>
+<li><a title="ploigos_step_runner.step_implementers.shared.tox_generic.ToxGeneric" href="step_implementers/shared/tox_generic.html#ploigos_step_runner.step_implementers.shared.tox_generic.ToxGeneric">ToxGeneric</a></li>
 <li><a title="ploigos_step_runner.step_implementers.sign_container_image.podman_sign.PodmanSign" href="step_implementers/sign_container_image/podman_sign.html#ploigos_step_runner.step_implementers.sign_container_image.podman_sign.PodmanSign">PodmanSign</a></li>
 <li><a title="ploigos_step_runner.step_implementers.static_code_analysis.sonarqube.SonarQube" href="step_implementers/static_code_analysis/sonarqube.html#ploigos_step_runner.step_implementers.static_code_analysis.sonarqube.SonarQube">SonarQube</a></li>
 <li><a title="ploigos_step_runner.step_implementers.tag_source.git.Git" href="step_implementers/tag_source/git.html#ploigos_step_runner.step_implementers.tag_source.git.Git">Git</a></li>
@@ -1960,7 +2022,7 @@ def workflow_result(self):
 </details>
 </dd>
 <dt id="ploigos_step_runner.step_implementer.StepImplementer.get_config_value"><code class="name flex">
-<span>def <span class="ident">get_config_value</span></span>(<span>self, key)</span>
+<span>def <span class="ident">get_config_value</span></span>(<span>self, key, with_defaults=True)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Convenience function for self.config.get_config_value.</p>
@@ -1981,6 +2043,8 @@ get_copy_of_runtime_step_config</p>
 <dl>
 <dt><strong><code>key</code></strong> :&ensp;<code>str</code></dt>
 <dd>Key to get the configuration value for.</dd>
+<dt><strong><code>with_defaults</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If True then consider defaults, else if False, only consider user specified config.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
@@ -1992,7 +2056,7 @@ for this sub step in the given context with the given defaults.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_config_value(self, key):
+<pre><code class="python">def get_config_value(self, key, with_defaults=True):
     &#34;&#34;&#34;Convenience function for self.config.get_config_value.
 
     Get the configuration value for a given configuration key from the
@@ -2016,6 +2080,8 @@ for this sub step in the given context with the given defaults.</dd>
     ----------
     key : str
         Key to get the configuration value for.
+    with_defaults : bool
+        If True then consider defaults, else if False, only consider user specified config.
 
     Returns
     -------
@@ -2023,10 +2089,16 @@ for this sub step in the given context with the given defaults.</dd>
         Value of the given configuration key or None if one does not exist
         for this sub step in the given context with the given defaults.
     &#34;&#34;&#34;
+    if with_defaults:
+        defaults = self.step_implementer_config_defaults()
+    else:
+        defaults = None
+
     return self.config.get_config_value(
-        key,
-        self.environment,
-        self.step_implementer_config_defaults())</code></pre>
+        key=key,
+        environment=self.environment,
+        defaults=defaults
+    )</code></pre>
 </details>
 </dd>
 <dt id="ploigos_step_runner.step_implementer.StepImplementer.get_copy_of_runtime_step_config"><code class="name flex">
@@ -2141,6 +2213,16 @@ In this example, 'foo' is the artifact name, return 'bar'
 <dd>
 <div class="desc"><p>Get the value for a given key, either from given configuration or from the result
 of any previous step.</p>
+<p>From least precedence to highest precedence.</p>
+<pre><code>1. defaults
+2. Global Configuration Defaults (self.global_config_defaults)
+3. Global Environment Configuration Defaults (self.global_environment_config_defaults)
+4. Previous step result in same environment as this step
+5. Previous step result in any environment
+6. Step Configuration ( self.step_config)
+7. Step Environment Configuration (self.step_environment_config)
+8. Step Configuration Runtime Overrides (step_config_runtime_overrides)
+</code></pre>
 <h2 id="parameters">Parameters</h2>
 <dl>
 <dt><strong><code>key</code></strong> :&ensp;<code>str, array</code></dt>
@@ -2162,6 +2244,17 @@ key. Or None if not found.</dd>
     &#34;&#34;&#34;Get the value for a given key, either from given configuration or from the result
     of any previous step.
 
+    From least precedence to highest precedence.
+
+        1. defaults
+        2. Global Configuration Defaults (self.global_config_defaults)
+        3. Global Environment Configuration Defaults (self.global_environment_config_defaults)
+        4. Previous step result in same environment as this step
+        5. Previous step result in any environment
+        6. Step Configuration ( self.step_config)
+        7. Step Environment Configuration (self.step_environment_config)
+        8. Step Configuration Runtime Overrides (step_config_runtime_overrides)
+
     Parameters
     ----------
     key : str, array
@@ -2181,12 +2274,16 @@ key. Or None if not found.</dd>
     else:
         keys = [key]
 
+    # first try to get config value (without defaults) from any of the keys (in order)
+    # NOTE: do this in its own loop so user config values for any given key are always
+    #       prioritized over result values from any of the keys
     for k in keys:
-        # first try to get config value
-        config_value = self.get_config_value(k)
+        config_value = self.get_config_value(k, with_defaults=False)
         if config_value is not None:
             return config_value
 
+    # second try to get result value from any of the given keys (in order)
+    for k in keys:
         # if not found config value try to get result value specific to current environment
         if self.environment:
             result_value = self.get_result_value(
@@ -2196,15 +2293,22 @@ key. Or None if not found.</dd>
             if result_value is not None:
                 return result_value
 
-        # last try getting result value from no specific environment
+        # try getting result value from no specific environment
         result_value = self.get_result_value(
             artifact_name=k
         )
+        if result_value is not None:
+            return result_value
 
-        if result_value:
-            break
+    # last get config from defaults
+    # NOTE: do this in separate loop so none default values are prioritized for all keys
+    #       over any default values for any of the keys
+    for k in keys:
+        config_value_default = self.get_config_value(k, with_defaults=True)
+        if config_value_default is not None:
+            return config_value_default
 
-    return result_value</code></pre>
+    return None</code></pre>
 </details>
 </dd>
 <dt id="ploigos_step_runner.step_implementer.StepImplementer.has_config_value"><code class="name flex">

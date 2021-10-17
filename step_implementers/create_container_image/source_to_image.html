@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>ploigos_step_runner.step_implementers.create_container_image.buildah API documentation</title>
-<meta name="description" content="`StepImplementer` for the `create-container-image step` using Buildah …" />
+<title>ploigos_step_runner.step_implementers.create_container_image.source_to_image API documentation</title>
+<meta name="description" content="`StepImplementer` for the `create-container-image step` using Source-to-Image (s2i)
+to create a Containerfile that can be built by another …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -19,10 +20,11 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>ploigos_step_runner.step_implementers.create_container_image.buildah</code></h1>
+<h1 class="title">Module <code>ploigos_step_runner.step_implementers.create_container_image.source_to_image</code></h1>
 </header>
 <section id="section-intro">
-<p><code>StepImplementer</code> for the <code>create-container-image step</code> using Buildah.</p>
+<p><code>StepImplementer</code> for the <code>create-container-image step</code> using Source-to-Image (s2i)
+to create a Containerfile that can be built by another <code>StepImplementer</code>, such as Buildah.</p>
 <h2 id="step-configuration">Step Configuration</h2>
 <p>Step configuration expected as input to this step.
 Could come from:</p>
@@ -42,32 +44,49 @@ Could come from:</p>
 </thead>
 <tbody>
 <tr>
-<td><code>imagespecfile</code></td>
-<td>Yes</td>
-<td><code>'Containerfile'</code></td>
-<td>File defining the container image</td>
+<td><code>s2i-builder-image</code></td>
+<td>True</td>
+<td></td>
+<td>Container image tag to use as the s2i builder image.</td>
+</tr>
+<tr>
+<td><code>s2i-image-scripts-url</code></td>
+<td>False</td>
+<td></td>
+<td>Location of the s2i scripts in the given <code>s2i-builder-image</code>.
+If not given s2i will assume they are in <code>image:///usr/libexec/s2i</code>.
+<br/>
+EX:<br/>
+s2i-builder-image: registry.redhat.io/redhat-openjdk-18/openjdk18-openshift <br/>
+s2i-image-scripts-url: <code>image:///usr/local/s2i</code></td>
+</tr>
+<tr>
+<td><code>s2i-loglevel</code></td>
+<td>False</td>
+<td>1</td>
+<td>s2i log level to specify. See s2i docs.</td>
+</tr>
+<tr>
+<td><code>s2i-additional-arguments</code></td>
+<td>False</td>
+<td><code>[]</code></td>
+<td>List of additional arguments to append to s2i call.</td>
 </tr>
 <tr>
 <td><code>context</code></td>
-<td>Yes</td>
+<td>True</td>
 <td><code>'.'</code></td>
 <td>Context to build the container image in</td>
 </tr>
 <tr>
 <td><code>tls-verify</code></td>
-<td>Yes</td>
+<td>True</td>
 <td><code>True</code></td>
 <td>Whether to verify TLS when pulling parent images</td>
 </tr>
 <tr>
-<td><code>format</code></td>
-<td>Yes</td>
-<td><code>'oci'</code></td>
-<td>format of the built image's manifest and metadata</td>
-</tr>
-<tr>
 <td><code>containers-config-auth-file</code></td>
-<td>No</td>
+<td>False</td>
 <td></td>
 <td>Path to the container registry authentication
 file to use for container registry authentication.
@@ -75,33 +94,8 @@ If one is not provided one will be created in the
 working directory.</td>
 </tr>
 <tr>
-<td><code>[container-image-tag,
-container-image-version]</code></td>
-<td>Yes</td>
-<td></td>
-<td>Container image tag to use when building the container image.</td>
-</tr>
-<tr>
-<td><code>organization</code></td>
-<td>Yes</td>
-<td></td>
-<td>Used in built container image tag</td>
-</tr>
-<tr>
-<td><code>application_name</code></td>
-<td>Yes</td>
-<td></td>
-<td>Used in built container image tag</td>
-</tr>
-<tr>
-<td><code>service_name</code></td>
-<td>No</td>
-<td></td>
-<td>Used in built container image tag</td>
-</tr>
-<tr>
 <td><code>container-registries</code></td>
-<td>No</td>
+<td>False</td>
 <td></td>
 <td>Hash of container registries to authenticate with.</td>
 </tr>
@@ -118,28 +112,38 @@ container-image-version]</code></td>
 </thead>
 <tbody>
 <tr>
-<td><code>container-image-registry</code></td>
-<td>Container image registry of the built container image address.</td>
+<td><code>container-image-registry-uri</code></td>
+<td>Registry URI poriton of the container image tag of the built container image.</td>
+</tr>
+<tr>
+<td><code>container-image-registry-organization</code></td>
+<td>Organization portion of the container image tag of the built container image.</td>
 </tr>
 <tr>
 <td><code>container-image-repository</code></td>
-<td>Container image repository of the built container image address.</td>
+<td>Repository portion of the container image tag of the built container image.</td>
+</tr>
+<tr>
+<td><code>container-image-name</code></td>
+<td>Another way to reference the repository portion of the container image tag
+of the built container image.</td>
+</tr>
+<tr>
+<td><code>container-image-version</code></td>
+<td>Version portion of the container image tag of the built container image.</td>
 </tr>
 <tr>
 <td><code>container-image-tag</code></td>
-<td>Container image tag of the built container image address.</td>
+<td>Full container image tag of the built container, including the registry URI. <br/>
+Takes the form of:
+<code>container-image-registry-organization/container-image-repository:container-image-version</code></td>
 </tr>
 <tr>
-<td><code>container-image-build-digest</code></td>
-<td>Container image digest of the built container image address.</td>
-</tr>
-<tr>
-<td><code>container-image-build-address</code></td>
-<td>Container image address of the built container image.</td>
-</tr>
-<tr>
-<td><code>container-image-build-short-address</code></td>
-<td>Container image short address (no registry) of the built container image.</td>
+<td><code>container-image-short-tag</code></td>
+<td>Short container image tag of the built container image,
+excluding the registry URI. <br/>
+Takes the form of:
+<code>container-image-registry-uri/container-image-registry-organization/container-image-repository:container-image-version</code></td>
 </tr>
 </tbody>
 </table>
@@ -147,7 +151,8 @@ container-image-version]</code></td>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">&#34;&#34;&#34;`StepImplementer` for the `create-container-image step` using Buildah.
+<pre><code class="python">&#34;&#34;&#34;`StepImplementer` for the `create-container-image step` using Source-to-Image (s2i)
+to create a Containerfile that can be built by another `StepImplementer`, such as Buildah.
 
 Step Configuration
 ------------------
@@ -158,36 +163,46 @@ Could come from:
   * runtime configuration
   * previous step results
 
-Configuration Key             | Required? | Default           | Description
-------------------------------|-----------|-------------------|-----------
-`imagespecfile`               | Yes       | `&#39;Containerfile&#39;` | File defining the container image
-`context`                     | Yes       | `&#39;.&#39;`             | Context to build the container image in
-`tls-verify`                  | Yes       | `True`            | Whether to verify TLS when pulling parent images
-`format`                      | Yes       | `&#39;oci&#39;`           | format of the built image&#39;s manifest and metadata
-`containers-config-auth-file` | No        |                   | Path to the container registry authentication \
-                                                                file to use for container registry authentication. \
-                                                                If one is not provided one will be created in the \
-                                                                working directory.
-`[container-image-tag, \
-  container-image-version]`   | Yes       |                   | Container image tag to use when building the container image.
-`organization`                | Yes       |                   | Used in built container image tag
-`application_name`            | Yes       |                   | Used in built container image tag
-`service_name`                | No        |                   | Used in built container image tag
-`container-registries`        | No        |                   | Hash of container registries to authenticate with.
+Configuration Key             | Required? | Default | Description
+------------------------------|-----------|---------|-----------
+`s2i-builder-image`           | True      |         | Container image tag to use as the s2i builder image.
+`s2i-image-scripts-url`       | False     |         | Location of the s2i scripts in the given `s2i-builder-image`. \
+                                                      If not given s2i will assume they are in `image:///usr/libexec/s2i`. \
+                                                      &lt;br/&gt; \
+                                                      EX:&lt;br/&gt; \
+                                                      s2i-builder-image: registry.redhat.io/redhat-openjdk-18/openjdk18-openshift &lt;br/&gt; \
+                                                      s2i-image-scripts-url: `image:///usr/local/s2i`
+`s2i-loglevel`                | False     | 1       | s2i log level to specify. See s2i docs.
+`s2i-additional-arguments`    | False     | `[]`    | List of additional arguments to append to s2i call.
+`context`                     | True      | `&#39;.&#39;`   | Context to build the container image in
+`tls-verify`                  | True      | `True`  | Whether to verify TLS when pulling parent images
+`containers-config-auth-file` | False     |         | Path to the container registry authentication \
+                                                      file to use for container registry authentication. \
+                                                      If one is not provided one will be created in the \
+                                                      working directory.
+`container-registries`        | False     |         | Hash of container registries to authenticate with.
+
 
 Result Artifacts
 ----------------
 Results artifacts output by this step.
 
-Result Artifact Key                   | Description
---------------------------------------|------------
-`container-image-registry`            | Container image registry of the built container image address.
-`container-image-repository`          | Container image repository of the built container image address.
-`container-image-tag`                 | Container image tag of the built container image address.
-`container-image-build-digest`        | Container image digest of the built container image address.
-`container-image-build-address`       | Container image address of the built container image.
-`container-image-build-short-address` | Container image short address (no registry) of the built container image.
-&#34;&#34;&#34; # pylint: disable=line-too-long
+Result Artifact Key                     | Description
+----------------------------------------|------------
+`container-image-registry-uri`          | Registry URI poriton of the container image tag of the built container image.
+`container-image-registry-organization` | Organization portion of the container image tag of the built container image.
+`container-image-repository`            | Repository portion of the container image tag of the built container image.
+`container-image-name`                  | Another way to reference the repository portion of the container image tag \
+                                          of the built container image.
+`container-image-version`               | Version portion of the container image tag of the built container image.
+`container-image-tag`                   | Full container image tag of the built container, including the registry URI. &lt;br/&gt; \
+                                          Takes the form of: \
+                                          `container-image-registry-organization/container-image-repository:container-image-version`
+`container-image-short-tag`             | Short container image tag of the built container image,  excluding the registry URI. &lt;br/&gt; \
+                                          Takes the form of: \
+                                          `container-image-registry-uri/container-image-registry-organization/container-image-repository:container-image-version`
+
+&#34;&#34;&#34;# pylint: disable=line-too-long
 
 import os
 import sys
@@ -195,37 +210,31 @@ from distutils import util
 
 import sh
 from ploigos_step_runner import StepImplementer, StepResult
-from ploigos_step_runner.utils.containers import (
-    add_container_build_step_result_artifacts, container_registries_login,
-    determine_container_image_address_info, get_container_image_digest)
+from ploigos_step_runner.utils.containers import (container_registries_login,
+                                                  inspect_container_image)
 
 DEFAULT_CONFIG = {
-    # Image specification file name
-    &#39;imagespecfile&#39;: &#39;Containerfile&#39;,
-
-    # Parent path to the image specification file
     &#39;context&#39;: &#39;.&#39;,
-
-    # Verify TLS Certs?
     &#39;tls-verify&#39;: True,
-
-    # Format of the produced image
-    &#39;format&#39;: &#39;oci&#39;
+    &#39;s2i-additional-arguments&#39;: [],
+    &#39;s2i-loglevel&#39;: 1
 }
 
 REQUIRED_CONFIG_OR_PREVIOUS_STEP_RESULT_ARTIFACT_KEYS = [
-    &#39;imagespecfile&#39;,
     &#39;context&#39;,
     &#39;tls-verify&#39;,
-    &#39;format&#39;,
+    &#39;s2i-builder-image&#39;,
     &#39;organization&#39;,
     &#39;service-name&#39;,
     &#39;application-name&#39;
 ]
 
-class Buildah(StepImplementer):
-    &#34;&#34;&#34;`StepImplementer` for the `create-container-image step` using Buildah.
+class SourceToImage(StepImplementer):
+    &#34;&#34;&#34;`StepImplementer` for the `create-container-image step` using Source-to-Image (s2i)
+    to create a Containerfile that can be built by another `StepImplementer`, such as Buildah.
     &#34;&#34;&#34;
+
+    CONTAINER_LABEL_SCRIPTS_URL = &#39;io.openshift.s2i.scripts-url&#39;
 
     @staticmethod
     def step_implementer_config_defaults():
@@ -259,29 +268,6 @@ class Buildah(StepImplementer):
         &#34;&#34;&#34;
         return REQUIRED_CONFIG_OR_PREVIOUS_STEP_RESULT_ARTIFACT_KEYS
 
-    def _validate_required_config_or_previous_step_result_artifact_keys(self):
-        &#34;&#34;&#34;Validates that the required configuration keys or previous step result artifacts
-        are set and have valid values.
-
-        Validates that:
-        * required configuration is given
-        * given &#39;imagespecfile&#39; exists
-
-        Raises
-        ------
-        AssertionError
-            If step configuration or previous step result artifacts have invalid required values
-        &#34;&#34;&#34;
-        super()._validate_required_config_or_previous_step_result_artifact_keys()
-
-        # if pom-file has value verify file exists
-        # If it doesn&#39;t have value and is required function will have already failed
-        image_spec_file = self.get_value(&#39;imagespecfile&#39;)
-        context = self.get_value(&#39;context&#39;)
-        image_spec_file_full_path = os.path.join(context, image_spec_file)
-        assert os.path.exists(image_spec_file_full_path), \
-            f&#39;Given imagespecfile ({image_spec_file}) does not exist in given context ({context}).&#39;
-
     def _run_step(self):
         &#34;&#34;&#34;Runs the step implemented by this StepImplementer.
 
@@ -292,27 +278,32 @@ class Buildah(StepImplementer):
         &#34;&#34;&#34;
         step_result = StepResult.from_step_implementer(self)
 
-        # get config
-        image_spec_file = self.get_value(&#39;imagespecfile&#39;)
+        # get values
+        builder_image = self.get_value(&#39;s2i-builder-image&#39;)
+
+        # determine tls flag
         tls_verify = self.get_value(&#39;tls-verify&#39;)
         if isinstance(tls_verify, str):
             tls_verify = bool(util.strtobool(tls_verify))
+        if tls_verify:
+            s2i_tls_flags = [&#39;--tlsverify&#39;]
+        else:
+            s2i_tls_flags = []
 
-        # create local build tag
-        container_image_build_address, container_image_build_short_address, \
-        contaimer_image_registry, container_image_repository, container_image_tag = \
-            determine_container_image_address_info(
-                contaimer_image_registry=&#39;localhost&#39;,
-                container_image_tag=self.get_value([
-                    &#39;container-image-tag&#39;,
-                    &#39;container-image-version&#39;
-                ]),
-                organization=self.get_value(&#39;organization&#39;),
-                application_name=self.get_value(&#39;application-name&#39;),
-                service_name=self.get_value(&#39;service-name&#39;)
-            )
+        # determine the generated imagespec file
+        s2i_working_dir = self.create_working_dir_sub_dir(&#39;s2i-context&#39;)
+        imagespecfile = self.write_working_file(
+            os.path.join(s2i_working_dir, &#39;Containerfile.s2i-gen&#39;)
+        )
 
-        try:
+        # determine image scripts url flags
+        # use user provided url if given,
+        # else try and inspect from builder image
+        s2i_image_scripts_url = self.get_value(&#39;s2i-image-scripts-url&#39;)
+        if not s2i_image_scripts_url:
+            print(&#39;Attempt to inspect builder image for label for image scripts url&#39;)
+
+            # attempt to auth with container image registries
             # login to any provider container registries
             # NOTE: important to specify the auth file because depending on the context this is
             #       being run in python process may not have permissions to default location
@@ -322,51 +313,72 @@ class Buildah(StepImplementer):
                     self.work_dir_path,
                     &#39;container-auth.json&#39;
                 )
-            container_registries_login(
-                registries=self.get_value(&#39;container-registries&#39;),
-                containers_config_auth_file=containers_config_auth_file,
-                containers_config_tls_verify=tls_verify
-            )
+            try:
+                container_registries_login(
+                    registries=self.get_value(&#39;container-registries&#39;),
+                    containers_config_auth_file=containers_config_auth_file,
+                    containers_config_tls_verify=tls_verify
+                )
+            except RuntimeError as error:
+                step_result.message += &#34;WARNING: error authenticating with&#34; \
+                    &#34; container image registries to be able to pull s2i builder image&#34; \
+                    f&#34; to inspect for image scripts url: {error}\n&#34;
 
+            # if not given, attempt to get from builder image labels
+            try:
+                container_image_details = inspect_container_image(
+                    container_image_address=builder_image,
+                    containers_config_auth_file=containers_config_auth_file
+                )
+
+                s2i_image_scripts_url = container_image_details[&#39;OCIv1&#39;][&#39;config&#39;][&#39;Labels&#39;]\
+                    [SourceToImage.CONTAINER_LABEL_SCRIPTS_URL]
+            except RuntimeError as error:
+                step_result.message += &#34;WARNING: failed to inspect s2i builder image&#34; \
+                    f&#34; ({builder_image}) to dynamically determine image scripts url.&#34; \
+                    f&#34; S2I default will be used: {error}\n&#34;
+            except KeyError as error:
+                step_result.message += &#34;WARNING: failed to find s2i scripts url label&#34; \
+                    f&#34; ({SourceToImage.CONTAINER_LABEL_SCRIPTS_URL}) on s2i builder image&#34; \
+                    f&#34; ({builder_image}) to dynamically determine image scripts url.&#34; \
+                    f&#34; S2I default will be used: Could not find key ({error}).\n&#34;
+
+        # if determined image scripts url set the flag
+        # else s2i will use its default (image:///usr/libexec/s2i)
+        if s2i_image_scripts_url:
+            s2i_image_scripts_url_flags = [&#39;--image-scripts-url&#39;, s2i_image_scripts_url]
+        else:
+            s2i_image_scripts_url_flags = []
+
+        try:
             # perform build
-            sh.buildah.bud(  # pylint: disable=no-member
-                &#39;--format=&#39; + self.get_value(&#39;format&#39;),
-                &#39;--tls-verify=&#39; + str(tls_verify).lower(),
-                &#39;--layers&#39;, &#39;-f&#39;, image_spec_file,
-                &#39;-t&#39;, container_image_build_address,
-                &#39;--authfile&#39;, containers_config_auth_file,
+            print(&#39;Use s2i to generate imagespecfile and accompanying resources&#39;)
+            sh.s2i.build(  # pylint: disable=no-member
                 self.get_value(&#39;context&#39;),
+                builder_image,
+                &#39;--loglevel&#39;, self.get_value(&#39;s2i-loglevel&#39;),
+                *s2i_tls_flags,
+                &#39;--as-dockerfile&#39;, imagespecfile,
+                *s2i_image_scripts_url_flags,
+                *self.get_value(&#39;s2i-additional-arguments&#39;),
                 _out=sys.stdout,
                 _err=sys.stderr,
                 _tee=&#39;err&#39;
             )
-
         except sh.ErrorReturnCode as error:  # pylint: disable=undefined-variable
             step_result.success = False
-            step_result.message = &#39;Issue invoking buildah bud with given image &#39; \
-                f&#39;specification file ({image_spec_file}): {error}&#39;
-
-        # get image digest
-        container_image_digest = None
-        if step_result.success:
-            try:
-                print(&#34;Get container image digest&#34;)
-                container_image_digest = get_container_image_digest(
-                    container_image_address=container_image_build_address
-                )
-            except RuntimeError as error:
-                step_result.success = False
-                step_result.message = f&#34;Error getting built container image digest: {error}&#34;
+            step_result.message += f&#39;Issue invoking s2i build: {error}&#39;
 
         # add artifacts
-        add_container_build_step_result_artifacts(
-            step_result=step_result,
-            contaimer_image_registry=contaimer_image_registry,
-            container_image_repository=container_image_repository,
-            container_image_tag=container_image_tag,
-            container_image_digest=container_image_digest,
-            container_image_build_address=container_image_build_address,
-            container_image_build_short_address=container_image_build_short_address
+        step_result.add_artifact(
+            name=&#39;imagespecfile&#39;,
+            value=imagespecfile,
+            description=&#39;File defining the container image to build generated by s2i&#39;
+        )
+        step_result.add_artifact(
+            name=&#39;context&#39;,
+            value=s2i_working_dir,
+            description=&#39;Context to use when building the imagespecfile generated by S2I.&#39;
         )
 
         return step_result</code></pre>
@@ -381,19 +393,23 @@ class Buildah(StepImplementer):
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah"><code class="flex name class">
-<span>class <span class="ident">Buildah</span></span>
+<dt id="ploigos_step_runner.step_implementers.create_container_image.source_to_image.SourceToImage"><code class="flex name class">
+<span>class <span class="ident">SourceToImage</span></span>
 <span>(</span><span>workflow_result, parent_work_dir_path, config, environment=None)</span>
 </code></dt>
 <dd>
-<div class="desc"><p><code>StepImplementer</code> for the <code>create-container-image step</code> using Buildah.</p></div>
+<div class="desc"><p><code>StepImplementer</code> for the <code>create-container-image step</code> using Source-to-Image (s2i)
+to create a Containerfile that can be built by another <code>StepImplementer</code>, such as Buildah.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">class Buildah(StepImplementer):
-    &#34;&#34;&#34;`StepImplementer` for the `create-container-image step` using Buildah.
+<pre><code class="python">class SourceToImage(StepImplementer):
+    &#34;&#34;&#34;`StepImplementer` for the `create-container-image step` using Source-to-Image (s2i)
+    to create a Containerfile that can be built by another `StepImplementer`, such as Buildah.
     &#34;&#34;&#34;
+
+    CONTAINER_LABEL_SCRIPTS_URL = &#39;io.openshift.s2i.scripts-url&#39;
 
     @staticmethod
     def step_implementer_config_defaults():
@@ -427,29 +443,6 @@ class Buildah(StepImplementer):
         &#34;&#34;&#34;
         return REQUIRED_CONFIG_OR_PREVIOUS_STEP_RESULT_ARTIFACT_KEYS
 
-    def _validate_required_config_or_previous_step_result_artifact_keys(self):
-        &#34;&#34;&#34;Validates that the required configuration keys or previous step result artifacts
-        are set and have valid values.
-
-        Validates that:
-        * required configuration is given
-        * given &#39;imagespecfile&#39; exists
-
-        Raises
-        ------
-        AssertionError
-            If step configuration or previous step result artifacts have invalid required values
-        &#34;&#34;&#34;
-        super()._validate_required_config_or_previous_step_result_artifact_keys()
-
-        # if pom-file has value verify file exists
-        # If it doesn&#39;t have value and is required function will have already failed
-        image_spec_file = self.get_value(&#39;imagespecfile&#39;)
-        context = self.get_value(&#39;context&#39;)
-        image_spec_file_full_path = os.path.join(context, image_spec_file)
-        assert os.path.exists(image_spec_file_full_path), \
-            f&#39;Given imagespecfile ({image_spec_file}) does not exist in given context ({context}).&#39;
-
     def _run_step(self):
         &#34;&#34;&#34;Runs the step implemented by this StepImplementer.
 
@@ -460,27 +453,32 @@ class Buildah(StepImplementer):
         &#34;&#34;&#34;
         step_result = StepResult.from_step_implementer(self)
 
-        # get config
-        image_spec_file = self.get_value(&#39;imagespecfile&#39;)
+        # get values
+        builder_image = self.get_value(&#39;s2i-builder-image&#39;)
+
+        # determine tls flag
         tls_verify = self.get_value(&#39;tls-verify&#39;)
         if isinstance(tls_verify, str):
             tls_verify = bool(util.strtobool(tls_verify))
+        if tls_verify:
+            s2i_tls_flags = [&#39;--tlsverify&#39;]
+        else:
+            s2i_tls_flags = []
 
-        # create local build tag
-        container_image_build_address, container_image_build_short_address, \
-        contaimer_image_registry, container_image_repository, container_image_tag = \
-            determine_container_image_address_info(
-                contaimer_image_registry=&#39;localhost&#39;,
-                container_image_tag=self.get_value([
-                    &#39;container-image-tag&#39;,
-                    &#39;container-image-version&#39;
-                ]),
-                organization=self.get_value(&#39;organization&#39;),
-                application_name=self.get_value(&#39;application-name&#39;),
-                service_name=self.get_value(&#39;service-name&#39;)
-            )
+        # determine the generated imagespec file
+        s2i_working_dir = self.create_working_dir_sub_dir(&#39;s2i-context&#39;)
+        imagespecfile = self.write_working_file(
+            os.path.join(s2i_working_dir, &#39;Containerfile.s2i-gen&#39;)
+        )
 
-        try:
+        # determine image scripts url flags
+        # use user provided url if given,
+        # else try and inspect from builder image
+        s2i_image_scripts_url = self.get_value(&#39;s2i-image-scripts-url&#39;)
+        if not s2i_image_scripts_url:
+            print(&#39;Attempt to inspect builder image for label for image scripts url&#39;)
+
+            # attempt to auth with container image registries
             # login to any provider container registries
             # NOTE: important to specify the auth file because depending on the context this is
             #       being run in python process may not have permissions to default location
@@ -490,51 +488,72 @@ class Buildah(StepImplementer):
                     self.work_dir_path,
                     &#39;container-auth.json&#39;
                 )
-            container_registries_login(
-                registries=self.get_value(&#39;container-registries&#39;),
-                containers_config_auth_file=containers_config_auth_file,
-                containers_config_tls_verify=tls_verify
-            )
+            try:
+                container_registries_login(
+                    registries=self.get_value(&#39;container-registries&#39;),
+                    containers_config_auth_file=containers_config_auth_file,
+                    containers_config_tls_verify=tls_verify
+                )
+            except RuntimeError as error:
+                step_result.message += &#34;WARNING: error authenticating with&#34; \
+                    &#34; container image registries to be able to pull s2i builder image&#34; \
+                    f&#34; to inspect for image scripts url: {error}\n&#34;
 
+            # if not given, attempt to get from builder image labels
+            try:
+                container_image_details = inspect_container_image(
+                    container_image_address=builder_image,
+                    containers_config_auth_file=containers_config_auth_file
+                )
+
+                s2i_image_scripts_url = container_image_details[&#39;OCIv1&#39;][&#39;config&#39;][&#39;Labels&#39;]\
+                    [SourceToImage.CONTAINER_LABEL_SCRIPTS_URL]
+            except RuntimeError as error:
+                step_result.message += &#34;WARNING: failed to inspect s2i builder image&#34; \
+                    f&#34; ({builder_image}) to dynamically determine image scripts url.&#34; \
+                    f&#34; S2I default will be used: {error}\n&#34;
+            except KeyError as error:
+                step_result.message += &#34;WARNING: failed to find s2i scripts url label&#34; \
+                    f&#34; ({SourceToImage.CONTAINER_LABEL_SCRIPTS_URL}) on s2i builder image&#34; \
+                    f&#34; ({builder_image}) to dynamically determine image scripts url.&#34; \
+                    f&#34; S2I default will be used: Could not find key ({error}).\n&#34;
+
+        # if determined image scripts url set the flag
+        # else s2i will use its default (image:///usr/libexec/s2i)
+        if s2i_image_scripts_url:
+            s2i_image_scripts_url_flags = [&#39;--image-scripts-url&#39;, s2i_image_scripts_url]
+        else:
+            s2i_image_scripts_url_flags = []
+
+        try:
             # perform build
-            sh.buildah.bud(  # pylint: disable=no-member
-                &#39;--format=&#39; + self.get_value(&#39;format&#39;),
-                &#39;--tls-verify=&#39; + str(tls_verify).lower(),
-                &#39;--layers&#39;, &#39;-f&#39;, image_spec_file,
-                &#39;-t&#39;, container_image_build_address,
-                &#39;--authfile&#39;, containers_config_auth_file,
+            print(&#39;Use s2i to generate imagespecfile and accompanying resources&#39;)
+            sh.s2i.build(  # pylint: disable=no-member
                 self.get_value(&#39;context&#39;),
+                builder_image,
+                &#39;--loglevel&#39;, self.get_value(&#39;s2i-loglevel&#39;),
+                *s2i_tls_flags,
+                &#39;--as-dockerfile&#39;, imagespecfile,
+                *s2i_image_scripts_url_flags,
+                *self.get_value(&#39;s2i-additional-arguments&#39;),
                 _out=sys.stdout,
                 _err=sys.stderr,
                 _tee=&#39;err&#39;
             )
-
         except sh.ErrorReturnCode as error:  # pylint: disable=undefined-variable
             step_result.success = False
-            step_result.message = &#39;Issue invoking buildah bud with given image &#39; \
-                f&#39;specification file ({image_spec_file}): {error}&#39;
-
-        # get image digest
-        container_image_digest = None
-        if step_result.success:
-            try:
-                print(&#34;Get container image digest&#34;)
-                container_image_digest = get_container_image_digest(
-                    container_image_address=container_image_build_address
-                )
-            except RuntimeError as error:
-                step_result.success = False
-                step_result.message = f&#34;Error getting built container image digest: {error}&#34;
+            step_result.message += f&#39;Issue invoking s2i build: {error}&#39;
 
         # add artifacts
-        add_container_build_step_result_artifacts(
-            step_result=step_result,
-            contaimer_image_registry=contaimer_image_registry,
-            container_image_repository=container_image_repository,
-            container_image_tag=container_image_tag,
-            container_image_digest=container_image_digest,
-            container_image_build_address=container_image_build_address,
-            container_image_build_short_address=container_image_build_short_address
+        step_result.add_artifact(
+            name=&#39;imagespecfile&#39;,
+            value=imagespecfile,
+            description=&#39;File defining the container image to build generated by s2i&#39;
+        )
+        step_result.add_artifact(
+            name=&#39;context&#39;,
+            value=s2i_working_dir,
+            description=&#39;Context to use when building the imagespecfile generated by S2I.&#39;
         )
 
         return step_result</code></pre>
@@ -544,6 +563,13 @@ class Buildah(StepImplementer):
 <li><a title="ploigos_step_runner.step_implementer.StepImplementer" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer">StepImplementer</a></li>
 <li>abc.ABC</li>
 </ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="ploigos_step_runner.step_implementers.create_container_image.source_to_image.SourceToImage.CONTAINER_LABEL_SCRIPTS_URL"><code class="name">var <span class="ident">CONTAINER_LABEL_SCRIPTS_URL</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="ploigos_step_runner.step_implementer.StepImplementer" href="../../step_implementer.html#ploigos_step_runner.step_implementer.StepImplementer">StepImplementer</a></b></code>:
@@ -593,7 +619,10 @@ class Buildah(StepImplementer):
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah" href="#ploigos_step_runner.step_implementers.create_container_image.buildah.Buildah">Buildah</a></code></h4>
+<h4><code><a title="ploigos_step_runner.step_implementers.create_container_image.source_to_image.SourceToImage" href="#ploigos_step_runner.step_implementers.create_container_image.source_to_image.SourceToImage">SourceToImage</a></code></h4>
+<ul class="">
+<li><code><a title="ploigos_step_runner.step_implementers.create_container_image.source_to_image.SourceToImage.CONTAINER_LABEL_SCRIPTS_URL" href="#ploigos_step_runner.step_implementers.create_container_image.source_to_image.SourceToImage.CONTAINER_LABEL_SCRIPTS_URL">CONTAINER_LABEL_SCRIPTS_URL</a></code></li>
+</ul>
 </li>
 </ul>
 </li>
